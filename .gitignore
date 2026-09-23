@@ -1,0 +1,19 @@
+# Telifli kaynak belge: izinsiz çoğaltılamaz ve dağıtılamaz.
+# Depoya kesinlikle eklenmemelidir.
+kvkk.pdf
+
+# Çalışma notları (isteğe bağlı olarak depodan çıkarılabilir)
+audit.md
+proje-plani.md
+proje-plani.html
+kvkk-rehber-inceleme.md
+kvkk-rehber-inceleme.html
+kvkk-web-calisma-cercevesi.html
+ilgili-kisi-haritasi.html
+senaryo-ve-belgeler.html
+audit-degerlendirmesi.html
+
+# Editör / işletim sistemi artıkları
+.DS_Store
+Thumbs.db
+*.swp

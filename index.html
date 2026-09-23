@@ -1,0 +1,1492 @@
+<!doctype html>
+<!--
+  Bu araç, KVKK ile Türkiye Barolar Birliği'nin avukatlar için hazırladığı uygulama rehberi esas alınarak hazırlanmıştır.
+  Notlar (kullanıcıya görünmez):
+    deliverable: statik web uygulaması — tek dosya, sunucusuz (web-prototype iskeleti temel alındı)
+    audience:    avukatlar ve hukuk büroları
+    direction:   sade + kurumsal-editoryal (kâğıt zemin, mürekkep metin, tek accent: bordo)
+    modules:     10 (karar akışı / yükümlülükler / uyarılar / ilgili kişiler ve veriler / senaryolar / belgeler / açık rıza ve ilkeler / aktarım / güvenlik / kaynaklar) + ana sayfa + arama
+    ilke:        başlıklar rehberin ilgili bölümlerine bağlanmaya çalışılmıştır
+    accent:      tek accent, ekran başına en fazla 2 görünür kullanım
+    kaynak:      KVKK × TBB "Avukatların Mesleki Faaliyetlerinde Kişisel Verilerin Korunmasına İlişkin Uygulama Rehberi" (KVKK Yayınları No: 115, Temmuz 2026)
+  Not: Tüm metin özgündür; rehberden alıntı yapılmaz, yalnızca madde ve karar numaralarına atıf verilir.
+-->
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KVKK Uygulama Rehberi · avukatlar için karar ve belge aracı</title>
+  <script id="auto-designer-preview-contract" type="application/json">
+    {
+      "artifactRole": "web-app",
+      "authoringViewport": { "width": 1440, "height": 900 },
+      "deviceAdaptation": { "enabled": true, "strategy": "responsive", "supportedDevices": ["desktop", "tablet", "mobile"] },
+      "breakpoints": { "mobileMax": 767, "tabletMin": 768, "tabletMax": 1023, "desktopMin": 1024 },
+      "defaultDevice": "canvas"
+    }
+  </script>
+  <style>
+    /* ─── tokens ───────────────────────────────────────────────────── */
+    :root {
+      --bg:      #f5f2eb;
+      --surface: #fcfaf5;
+      --fg:      #101b29;
+      --muted:   #48525f;
+      --border:  #ddd7c9;
+      --accent:  #8a2b33;
+
+      --accent-soft: color-mix(in oklch, var(--accent) 12%, transparent);
+      --fg-soft:     color-mix(in oklch, var(--fg) 6%, transparent);
+
+      --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+      --font-body:    -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      --font-mono:    ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+
+      --fs-h1: clamp(34px, 4.4vw, 52px);
+      --fs-h2: clamp(24px, 2.8vw, 32px);
+      --fs-h3: 19px;
+      --fs-lead: 18px;
+      --fs-body: 16px;
+      --fs-meta: 13px;
+
+      --gap-xs: 8px;  --gap-sm: 12px; --gap-md: 20px;
+      --gap-lg: 32px; --gap-xl: 48px; --gap-2xl: 72px;
+      --container: 1140px; --gutter: 28px;
+      --radius: 8px; --radius-lg: 12px;
+    }
+
+    /* ─── base ─────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    body {
+      margin: 0; background: var(--bg); color: var(--fg);
+      font-family: var(--font-body); font-size: var(--fs-body); line-height: 1.6;
+      text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; background: none; border: 0; color: inherit; }
+    p { text-wrap: pretty; margin: 0; }
+    h1, h2, h3, h4 { text-wrap: balance; margin: 0; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+    .container { max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); }
+    .skip { position: absolute; left: -9999px; }
+    .skip:focus { position: static; display: inline-block; margin: 8px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); }
+
+    /* ─── chrome ───────────────────────────────────────────────────── */
+    .topnav { position: sticky; top: 0; z-index: 20; background: color-mix(in oklch, var(--bg) 94%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+    .nav-inner { display: flex; align-items: center; gap: 12px; padding-block: 12px; flex-wrap: wrap; }
+    .brand { font-family: var(--font-display); font-size: 18px; font-weight: 600; letter-spacing: -0.01em; margin-right: 4px; }
+    .brand span { display: block; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 400; }
+    .navlinks { display: flex; gap: 2px; flex-wrap: wrap; }
+    .navlinks button { padding: 6px 9px; font-size: 13.5px; color: var(--muted); border-radius: var(--radius); border: 1px solid transparent; }
+    .navlinks button:hover { color: var(--fg); background: var(--fg-soft); }
+    .navlinks button[aria-current="true"] { color: var(--fg); border-color: var(--border); background: var(--surface); }
+    .navsep { width: 1px; height: 16px; background: var(--border); margin: 0 7px; align-self: center; }
+    .search { margin-left: auto; }
+    .search .input { width: 170px; padding: 8px 12px; font-size: 14px; }
+    @media (max-width: 720px) { .search { margin-left: 0; width: 100%; } .search .input { width: 100%; } .topnav { position: static; } .navsep { display: none; } }
+    .check { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; cursor: pointer; font-size: 14.5px; }
+    .check input { margin: 3px 0 0; accent-color: var(--accent); }
+    .result { text-align: left; width: 100%; display: block; }
+    .result .snip { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+    /* ─── type ─────────────────────────────────────────────────────── */
+    h1, .h1 { font-family: var(--font-display); font-size: var(--fs-h1); font-weight: 600; line-height: 1.08; letter-spacing: -0.02em; }
+    h2, .h2 { font-family: var(--font-display); font-size: var(--fs-h2); font-weight: 600; line-height: 1.14; letter-spacing: -0.015em; }
+    h3, .h3 { font-size: var(--fs-h3); font-weight: 600; line-height: 1.35; letter-spacing: -0.005em; }
+    .lead { font-size: var(--fs-lead); line-height: 1.55; color: var(--muted); max-width: 68ch; }
+    .muted { color: var(--muted); }
+    .eyebrow { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .meta { font-family: var(--font-mono); font-size: var(--fs-meta); color: var(--muted); }
+    .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+    /* ─── layout ───────────────────────────────────────────────────── */
+    .view { padding-block: clamp(28px, 4vw, 52px); }
+    .view[hidden] { display: none; }
+    .stack > * + * { margin-top: var(--gap-md); }
+    .stack-lg > * + * { margin-top: var(--gap-lg); }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--gap-md); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap-md); }
+    .grid-2-1 { display: grid; grid-template-columns: 1.6fr 1fr; gap: var(--gap-xl); align-items: start; }
+    .row-between { display: flex; align-items: end; justify-content: space-between; gap: var(--gap-md); flex-wrap: wrap; }
+    @media (max-width: 920px) {
+      .grid-2, .grid-3, .grid-2-1 { grid-template-columns: 1fr; }
+    }
+    /* tek sayıda kart kalırsa son kart satırı tamamen doldurur (boş kolon kalmasın) */
+    .grid-2 > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+    .grid-3 > :last-child:nth-child(3n + 1) { grid-column: 1 / -1; }
+
+    /* ─── surfaces ─────────────────────────────────────────────────── */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px; }
+    .card-click { text-align: left; width: 100%; display: block; transition: border-color .15s ease, background .15s ease; }
+    .card-click:hover { border-color: color-mix(in oklch, var(--fg) 30%, var(--border)); }
+    .card-click[aria-pressed="true"] { border-color: var(--fg); }
+    .card h3 { margin-bottom: 6px; }
+    .card p { color: var(--muted); font-size: 14.5px; }
+    .rule { border: 0; border-top: 1px solid var(--border); margin: var(--gap-lg) 0; }
+    .rule-strong { border: 0; border-top: 1px solid var(--fg); margin: var(--gap-lg) 0; }
+
+    /* ─── buttons ──────────────────────────────────────────────────── */
+    .btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px; min-height: 40px; border-radius: var(--radius); border: 1px solid var(--border); font-size: 15px; font-weight: 500; transition: background .15s ease, border-color .15s ease, transform .05s ease; }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    .btn-primary:hover { background: color-mix(in oklch, var(--accent) 86%, black); }
+    .btn-secondary:hover { border-color: var(--fg); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn:disabled:active { transform: none; }
+    .btn-sm { padding: 7px 13px; min-height: 34px; font-size: 13.5px; }
+
+    /* ─── tags / badges ────────────────────────────────────────────── */
+    .tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px solid var(--border); border-radius: 999px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+    .tag-solid { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+    .idx { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+
+    /* ─── wizard ───────────────────────────────────────────────────── */
+    .steps { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--gap-md); }
+    .step-pip { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .06em; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); }
+    .step-pip[data-state="active"] { border-color: var(--fg); color: var(--fg); }
+    .step-pip[data-state="done"] { color: var(--fg); }
+    fieldset { border: 0; padding: 0; margin: 0; }
+    legend { padding: 0; }
+    .opts { display: grid; gap: 8px; margin-top: var(--gap-sm); }
+    .opt { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; font-size: 15px; }
+    .opt:hover { border-color: color-mix(in oklch, var(--fg) 30%, var(--border)); }
+    .opt input { margin: 3px 0 0; accent-color: var(--accent); }
+    .opt span small { display: block; color: var(--muted); font-size: 13px; }
+    .opt:has(input:checked) { border-color: var(--fg); background: var(--fg-soft); }
+    .wiz-actions { display: flex; gap: var(--gap-sm); margin-top: var(--gap-lg); flex-wrap: wrap; }
+
+    /* ─── tables ───────────────────────────────────────────────────── */
+    table.dt { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+    table.dt th, table.dt td { padding: 11px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+    table.dt th { font-family: var(--font-mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+    table.dt td.n { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    table.dt tbody tr:hover { background: var(--fg-soft); }
+
+    /* ─── lists ────────────────────────────────────────────────────── */
+    .plain { list-style: none; padding: 0; margin: 0; }
+    .plain li { padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .plain li:last-child { border-bottom: 0; }
+    .bullets { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 14.5px; }
+    .bullets li { margin: 4px 0; }
+
+    /* ─── doc generator ────────────────────────────────────────────── */
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: 13px; color: var(--muted); }
+    .input, .textarea { width: 100%; padding: 10px 13px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--fg); font: inherit; font-size: 15px; }
+    .input:focus, .textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+    .textarea { min-height: 96px; resize: vertical; }
+    .doc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 30px; }
+    .doc h3 { font-family: var(--font-display); font-size: 21px; }
+    .doc .notice { margin-top: var(--gap-lg); padding: 14px 16px; border: 1px solid var(--border); border-left: 3px solid var(--fg); background: var(--bg); font-size: 13px; color: var(--muted); line-height: 1.55; }
+    .doc .dayanak { margin-top: var(--gap-md); font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+    .doc dl { margin: var(--gap-md) 0 0; display: grid; grid-template-columns: minmax(140px, max-content) 1fr; gap: 6px 18px; font-size: 14.5px; }
+    .doc dt { color: var(--muted); }
+    .doc dd { margin: 0; }
+
+    .note { border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius-lg); padding: 16px 18px; font-size: 14px; color: var(--muted); }
+    .note b { color: var(--fg); }
+
+    footer.pagefoot { border-top: 1px solid var(--border); margin-top: var(--gap-2xl); padding-block: var(--gap-lg); color: var(--muted); font-size: 13px; }
+    footer.pagefoot .container { display: flex; justify-content: space-between; gap: var(--gap-md); flex-wrap: wrap; }
+
+    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    @media print {
+      .topnav, footer.pagefoot, .no-print, .skip { display: none !important; }
+      body { background: var(--surface); }
+      .view[hidden] { display: none !important; }
+      .doc { border: 0; padding: 0; }
+      .card, .note { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">İçeriğe geç</a>
+
+  <header class="topnav no-print">
+    <div class="container nav-inner">
+      <div class="brand">KVKK Uygulama Rehberi<span>avukatlar için karar ve belge aracı</span></div>
+      <nav class="navlinks" aria-label="Bölümler" id="navlinks"></nav>
+      <div class="search">
+        <label class="visually-hidden" for="q">İçerikte ara</label>
+        <input class="input" id="q" type="search" placeholder="İçerikte ara…" autocomplete="off" />
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="container" tabindex="-1">
+
+    <!-- ── Ana sayfa ─────────────────────────────────────────────── -->
+    <section class="view" id="view-home" data-od-id="home">
+      <p class="eyebrow">KVKK × TBB uygulama rehberi temel alınarak hazırlanmıştır</p>
+      <h1 style="margin-top:14px; max-width:26ch;">Rehberin içeriğine hızlı bir bakış</h1>
+      <p class="lead" style="margin-top:16px;">Bu araç, avukatın mesleki faaliyetinde karşısına çıkabilecek kişisel veri sorularına bakmak için hazırlanmıştır: hangi işleme dayanağı gündeme gelebilir, hangi yükümlülükler hatırlanmalı, hangi belge taslağı hazırlanabilir. Çıktılar taslak niteliğindedir ve değerlendirmesi kullanıcıya aittir.</p>
+
+      <div class="grid-3" style="margin-top:var(--gap-xl)" id="home-grid"></div>
+
+      <hr class="rule" />
+
+      <div class="grid-2-1">
+        <div class="stack">
+          <h2>Bu araç ne, ne değil</h2>
+          <ul class="bullets" style="font-size:15px;">
+            <li><b>Ne:</b> rehberin kurallarını özgün dille yeniden kuran, durum bazlı yönlendirme yapan çevrimdışı çalışan bir araç.</li>
+            <li><b>Ne değil:</b> rehberin metnini aktaran dijital bir kopya değil; kurum onayı taşıyan resmî bir yayın değil; avukat yerine karar veren bir danışman değil.</li>
+            <li>Her sonuç, dayanağı (kanun maddesi ve Kurul kararı) ile birlikte gösterilir; böylece çıktı kendi başına denetlenebilir kalır.</li>
+          </ul>
+        </div>
+        <div class="note">
+          <p><b>Belge üretirken:</b> üretilen her belge "taslak ve örnek" ibaresi ve kaynak atfı ile birlikte çıkar. Bu ibareler kaldırılamaz — belgeyi kullanan kişi onu taslak olarak görüp kendi durumuna uyarlamalıdır.</p>
+        </div>
+      </div>
+
+      <hr class="rule" />
+      <h2>Rehberin haritası</h2>
+      <p class="muted" style="margin-top:8px; max-width:70ch;">Bu araç, rehberin on üç bölümünü yansıtır. Aşağıda her bölümün hangi modüle karşılık geldiği görülüyor.</p>
+      <div style="overflow-x:auto; margin-top:var(--gap-md);">
+        <table class="dt">
+          <caption class="visually-hidden">Rehber bölümlerinin uygulamadaki karşılığı</caption>
+          <thead><tr><th>Bölüm</th><th>Başlık</th><th>Bu araçta</th></tr></thead>
+          <tbody id="guide-map"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── Karar akışı ───────────────────────────────────────────── -->
+    <section class="view" id="view-karar" data-od-id="karar" hidden>
+      <div class="row-between">
+        <div>
+          <p class="eyebrow">Karar akışı · Rehber Bölüm V–VII</p>
+          <h1 style="margin-top:10px;">Karar akışı</h1>
+          <p class="lead" style="margin-top:12px;">Beş soruyla, işlediğiniz veri için geçerli dayanağı ve dikkat etmeniz gerekenleri belirleyin.</p>
+        </div>
+      </div>
+      <hr class="rule" />
+      <div id="wizard" class="grid-2-1">
+        <div id="wizard-panel" class="no-print"></div>
+        <div class="note no-print">
+          <p><b>Nasıl çalışır:</b> Rehberin V., VI. ve VII. bölümlerindeki kurallar sırayla uygulanır. Sonuç bir tavsiye değil, "bu veri için hangi dayanağa başvurabilirsiniz" haritasıdır. Nihai değerlendirme her zaman size aittir.</p>
+        </div>
+      </div>
+      <div id="wizard-result" aria-live="polite"></div>
+    </section>
+
+    <!-- ── Yükümlülükler ─────────────────────────────────────────── -->
+    <section class="view" id="view-yukumlulukler" data-od-id="yukumlulukler" hidden>
+      <p class="eyebrow">Yükümlülükler · Rehber Bölüm X</p>
+      <h1 style="margin-top:10px;">Yükümlülük panosu</h1>
+      <p class="lead" style="margin-top:12px;">Avukatın veri sorumlusu olarak yerine getirmesi gereken altı yükümlülük. Bir karta dokunun; ne yapılacağı, süresi ve dayanağı açılır.</p>
+      <hr class="rule" />
+      <div class="grid-3" id="obl-grid"></div>
+      <hr class="rule" />
+      <h2>Süre çizelgesi</h2>
+      <p class="muted" style="margin-top:8px; font-size:14.5px;">Uygulamada en sık karışan süreler.</p>
+      <div style="overflow-x:auto; margin-top:var(--gap-md);">
+        <table class="dt">
+          <caption class="visually-hidden">Süreler ve dayanakları</caption>
+          <thead><tr><th>Süre</th><th>Ne için</th><th>Dayanak</th></tr></thead>
+          <tbody id="sure-body"></tbody>
+        </table>
+      </div>
+      <div class="note" style="margin-top:var(--gap-md)"><p><b>Kaynak ayrımı:</b> ilk sekiz satır rehberin kendi hükümlerine dayanır. Son iki satırdaki süreler rehberde yer almaz; genel mevzuattan doğar ve hangi veri türüne uygulandığı işin niteliğine göre ayrıca değerlendirilmelidir.</p></div>
+    </section>
+
+    <!-- ── Uyarılar ──────────────────────────────────────────────── -->
+    <section class="view" id="view-uyarilar" data-od-id="uyarilar" hidden>
+      <p class="eyebrow">Uyarılar · Rehber Bölüm VII-C, X, XI</p>
+      <h1 style="margin-top:10px;">Yapılmaması gerekenler</h1>
+      <p class="lead" style="margin-top:12px;">Rehberdeki hatalı örneklerden damıtılmış sekiz davranış. Her biri tek kartta: ne yapılmamalı, neden, dayanağı ne.</p>
+      <hr class="rule" />
+      <div class="grid-2" id="warn-grid"></div>
+    </section>
+
+    <!-- ── İlgili kişi haritası ──────────────────────────────────── -->
+    <section class="view" id="view-kisiler" data-od-id="kisiler" hidden>
+      <p class="eyebrow">İlgili kişiler ve veriler · Rehber Bölüm IV–VI</p>
+      <h1 style="margin-top:10px;">Sorumluluk kimde, kime karşı?</h1>
+      <p class="lead" style="margin-top:12px;">Önce kimin veri sorumlusu olduğu (Bölüm IV), sonra verisini işlediğiniz kişi kategorileri (Bölüm V), en sonunda işlenen veri türleri (Bölüm VI).</p>
+      <hr class="rule" />
+      <h2>Sorumluluk kimde?</h2>
+      <p class="muted" style="margin-top:8px; max-width:70ch;">Avukat kural olarak veri sorumlusudur; birlikte çalışma biçimine ve kişinin statüsüne göre sorumluluk yer değiştirir.</p>
+      <div class="grid-2" id="controller-list" style="margin-top:var(--gap-md)"></div>
+      <hr class="rule" />
+      <h2>Kime karşı sorumluyum?</h2>
+      <p class="muted" style="margin-top:8px; max-width:70ch;">Yedi kişi kategorisi. Her birinde beklenen davranış, tipik hata ve dayanak listelenir.</p>
+      <div class="grid-2" id="people-grid" style="margin-top:var(--gap-md)"></div>
+      <hr class="rule" />
+      <h2>Herkese karşı ortak üç şey</h2>
+      <div class="grid-3" id="common-grid" style="margin-top:var(--gap-md)"></div>
+      <hr class="rule" />
+      <h2>İşlenen kişisel veriler</h2>
+      <p class="muted" style="margin-top:8px; max-width:72ch;">Rehber, avukatın işlediği verileri örneklerle gösterir; her dosyada kapsam ölçülülük ilkesine göre daraltılır.</p>
+      <ul class="bullets" id="datacat-list" style="margin-top:var(--gap-md)"></ul>
+      <hr class="rule" />
+      <h2>Özel nitelikli kişisel veriler</h2>
+      <div class="grid-2" style="margin-top:var(--gap-md)">
+        <div><p class="muted">Bu veriler kural olarak işlenemez; yalnızca Kanunun 6. maddenin üçüncü fıkrasındaki şartlardan biri varsa işlenebilir.</p>
+          <ul class="bullets" id="special-list" style="margin-top:10px;"></ul></div>
+        <div class="note"><p><b>İşleme şartları (m.6/3):</b> a) ilgili kişinin açık rızası · b) kanunlarda açıkça öngörülmesi · c) fiili imkânsızlık · ç) alenileştirme ve alenileştirme iradesine uygunluk · d) bir hakkın tesisi, kullanılması veya korunması için zorunlu olma · e) sır saklama yükümlülüğü altındaki kişilerce kamu sağlığı, koruyucu hekimlik, tıbbi teşhis ve tedavi amacıyla · f) istihdam, iş sağlığı ve güvenliği, sosyal güvenlik alanındaki hukuki yükümlülükler · g) siyasi, felsefi, dini veya sendikal amaçlı kuruluşların üyelerine yönelik işleme.</p>
+          <p style="margin-top:10px;">Yeterli önlemler ayrıca 6. maddenin dördüncü fıkrası (m.6/4) uyarınca alınır; özel nitelikli veriler bakımından Kurulun 31.01.2018 tarihli ve 2018/10 sayılı kararındaki önlemler uygulanır.</p>
+          <p style="margin-top:10px; font-size:12.5px;">Fıkra numarası: 7499 sayılı Kanunla 6. maddenin ikinci fıkrası yürürlükten kaldırılmış, üçüncü fıkrası değiştirilmiştir. Bu nedenle şartlar bugün de üçüncü fıkrada, yeterli önlemler dördüncü fıkrada düzenlenir; rehber de şartları üçüncü fıkra olarak gösterir (s.90).</p></div>
+      </div>
+    </section>
+
+    <!-- ── Senaryolar ────────────────────────────────────────────── -->
+    <section class="view" id="view-senaryolar" data-od-id="senaryolar" hidden>
+      <p class="eyebrow">Senaryolar · Rehber Bölüm VII-C, X, XI</p>
+      <h1 style="margin-top:10px;">Başıma gelen durumda ne yapmalıyım?</h1>
+      <p class="lead" style="margin-top:12px;">On bir tipik durum. Birini seçin; adımlar, hazırlanacak belgeler ve dayanak açılır.</p>
+      <hr class="rule" />
+      <div class="grid-2-1">
+        <div id="scn-detail"></div>
+        <div id="scn-list" class="no-print"></div>
+      </div>
+    </section>
+
+    <!-- ── Belge üretici ─────────────────────────────────────────── -->
+    <section class="view" id="view-belgeler" data-od-id="belgeler" hidden>
+      <p class="eyebrow">Belgeler · Rehber Bölüm X, XII</p>
+      <h1 style="margin-top:10px;">Belge üretici</h1>
+      <p class="lead" style="margin-top:12px;">Rehberin gerektirdiği sekiz belge şablonu. Alanları doldurun; belge, zorunlu bildirim notu ve dayanak satırıyla birlikte oluşur. Her şablonun üzerinde rehberin hangi bölümüne dayandığı yazılıdır.</p>
+      <hr class="rule" />
+      <div class="grid-2-1">
+        <div class="no-print">
+          <div class="stack">
+            <div class="field">
+              <label for="doc-select">Belge türü</label>
+              <select id="doc-select" class="input"></select>
+            </div>
+            <div id="doc-fields"></div>
+            <div style="display:flex; gap:12px; flex-wrap:wrap;" class="no-print">
+              <button class="btn btn-primary" id="doc-build">Belgeyi oluştur</button>
+              <button class="btn btn-secondary" id="doc-print" disabled>Yazdır / PDF</button>
+            </div>
+            <p class="meta" id="doc-status" role="status"></p>
+          </div>
+        </div>
+        <div id="doc-preview" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- ── Açık rıza ve ilkeler ───────────────────────────────────── -->
+    <section class="view" id="view-acikriza" data-od-id="acikriza" hidden>
+      <p class="eyebrow">Açık rıza ve ilkeler · Rehber Bölüm VII-A, IX</p>
+      <h1 style="margin-top:10px;">Açık rıza ve genel ilkeler</h1>
+      <p class="lead" style="margin-top:12px;">Rehberin en çok vurguladığı iki konu: açık rızanın ne zaman gerektiği — ve ne zaman alınmaması gerektiği — ile Kanunun 4. maddesindeki beş ilke.</p>
+      <hr class="rule" />
+      <h2>Açık rıza</h2>
+      <p class="muted" style="margin-top:8px; max-width:72ch;">Belirli bir konuya ilişkin, bilgilendirmeye dayanan ve özgür iradeyle açıklanan rıza. Üç unsurdan biri eksikse rıza geçerli sayılmaz; varlığını ispat yükü veri sorumlusundadır.</p>
+      <div class="grid-3" id="consent-elements" style="margin-top:var(--gap-md)"></div>
+      <div class="grid-2" style="margin-top:var(--gap-md)">
+        <div class="card"><h3>Ne zaman gerekir</h3><ul class="bullets" id="consent-need" style="margin-top:10px;"></ul></div>
+        <div class="card"><h3>Ne zaman gerekmez — ve alınmamalıdır</h3><ul class="bullets" id="consent-not" style="margin-top:10px;"></ul></div>
+      </div>
+      <h3 style="margin-top:var(--gap-xl)">Tipik hatalar</h3>
+      <div class="grid-2" id="consent-errors" style="margin-top:var(--gap-md)"></div>
+      <hr class="rule" />
+      <div class="row-between"><h2>Genel ilkeler</h2><span class="meta">KVKK m.4</span></div>
+      <p class="muted" style="margin-top:8px;">İşleme şartları sağlansa bile veri, bu beş ilkeye uygun işlenmelidir.</p>
+      <div class="grid-2" id="principles" style="margin-top:var(--gap-md)"></div>
+    </section>
+
+    <!-- ── Aktarım ────────────────────────────────────────────────── -->
+    <section class="view" id="view-aktarim" data-od-id="aktarim" hidden>
+      <p class="eyebrow">Aktarım · Rehber Bölüm VIII</p>
+      <h1 style="margin-top:10px;">Aktarım rehberi</h1>
+      <p class="lead" style="margin-top:12px;">Verinin yurt içinde ve yurt dışında paylaşılmasının kuralları; üretken yapay zekâ araçlarının bu tabloda nereye düştüğü.</p>
+      <hr class="rule" />
+      <div class="stack-lg" id="transfer-body"></div>
+    </section>
+
+    <!-- ── Güvenlik kontrol listesi ──────────────────────────────── -->
+    <section class="view" id="view-guvenlik" data-od-id="guvenlik" hidden>
+      <p class="eyebrow">Güvenlik · Rehber Bölüm XI</p>
+      <h1 style="margin-top:10px;">Veri güvenliği başlıkları</h1>
+      <p class="lead" style="margin-top:12px;">Kanunun 12. maddesi uygun güvenlik düzeyini sağlamayı ister; rehber, önlemlerin ayrıntısını Kurumun Kişisel Veri Güvenliği Rehberi'ne bırakır. Aşağıda yalnızca rehberin doğrudan işaret ettiği başlıklar var.</p>
+      <hr class="rule" />
+      <div class="row-between no-print">
+        <p class="meta" id="sec-count" role="status">0 madde işaretlendi.</p>
+        <button class="btn btn-secondary btn-sm" type="button" id="sec-reset">İşaretleri temizle</button>
+      </div>
+      <div class="stack-lg" id="sec-body" style="margin-top:var(--gap-md)"></div>
+      <div class="note" style="margin-top:var(--gap-lg)">
+        <p><b>İhlal hâlinde:</b> Kişisel verilerin kanuni olmayan yollarla elde edilmesi durumunda Kuruma <b>en geç 72 saat içinde</b> ve ilgili kişilere en kısa sürede bildirim yapılır. Bu akışın sorumlusunu ve haberleşme kanalını önceden belirlemek, yukarıdaki başlıklardan biridir.</p>
+      </div>
+    </section>
+
+    <!-- ── Arama ─────────────────────────────────────────────────── -->
+    <section class="view" id="view-arama" data-od-id="arama" hidden>
+      <p class="eyebrow">Arama</p>
+      <h1 style="margin-top:10px;">İçerikte ara</h1>
+      <p class="lead" style="margin-top:12px;">Üst çubuktaki arama alanına yazın; içerik başlıkları, maddeler, senaryolar ve belgeler taranır.</p>
+      <hr class="rule" />
+      <div class="stack" id="search-results"></div>
+    </section>
+
+    <!-- ── Kaynaklar ─────────────────────────────────────────────── -->
+    <section class="view" id="view-kaynak" data-od-id="kaynak" hidden>
+      <p class="eyebrow">Kaynaklar · Rehber Bölüm XIII</p>
+      <h1 style="margin-top:10px;">Kaynak ve künye</h1>
+      <p class="lead" style="margin-top:12px;">Bu aracın dayandığı belge ve atıf verilen Kurul kararları. Karar numaraları, doğrulama için künye bilgisiyle birlikte verilmiştir.</p>
+      <hr class="rule" />
+      <div class="grid-2">
+        <div class="card">
+          <h3>Kaynak belge</h3>
+          <p style="margin-top:8px;">Avukatların Mesleki Faaliyetlerinde Kişisel Verilerin Korunmasına İlişkin Uygulama Rehberi</p>
+          <dl style="margin-top:var(--gap-sm); display:grid; grid-template-columns:auto 1fr; gap:4px 14px; font-size:14px;">
+            <dt class="muted">Yayıncı</dt><dd>Kişisel Verileri Koruma Kurumu (KVKK)</dd>
+            <dt class="muted">Katkı</dt><dd>Türkiye Barolar Birliği</dd>
+            <dt class="muted">Künye</dt><dd>KVKK Yayınları No: 115 · Temmuz 2026 · Ankara</dd>
+            <dt class="muted">Dayanak</dt><dd>KVKK ile TBB arasında 14.12.2022 tarihli iş birliği protokolü</dd>
+          </dl>
+        </div>
+        <div class="note">
+          <p><b>Telif ve kullanım:</b> Belgenin hak sahibi KVKK'dır ve künyesinde izinsiz çoğaltma yasağı yer alır. Bu araç, rehberin metnini kopyalamaz; kuralları özgün dille yeniden kurar ve yalnızca madde/karar numaralarına atıf yapar. Araç, KVKK ve TBB'nin resmî görüşünü veya onayını temsil etmez.</p>
+          <p style="margin-top:10px;"><b>Kapsam sadakati:</b> Bu araçta yer alan başlıklar rehberin ilgili bölümlerine bağlanmaya çalışılmıştır ve her modülün başlığında dayandığı bölüm belirtilir. Rehberin değinmediği konular — örneğin çerezler, güvenlik kamerası ve ses kaydı — kapsam dışı bırakılmıştır.</p>
+        </div>
+      </div>
+      <hr class="rule" />
+      <h2>Atıf verilen Kurul kararları</h2>
+      <div style="overflow-x:auto; margin-top:var(--gap-md);">
+        <table class="dt">
+          <thead><tr><th>Karar</th><th>Konu</th></tr></thead>
+          <tbody id="decisions-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="pagefoot no-print">
+    <div class="container">
+      <span>KVKK Uygulama Rehberi · çevrimdışı çalışan taslak araç</span>
+      <span class="meta">Taslak ve örnektir · hukuki tavsiye değildir · KVKK veya TBB ile bağlantılı değildir, onların onayını temsil etmez</span>
+    </div>
+  </footer>
+
+  <script>
+  "use strict";
+
+  /* ── veri ──────────────────────────────────────────────────────── */
+  const MODULES = [
+    { id:"kisiler", title:"İlgili kişiler ve veriler", desc:"Sorumluluk kimde, kime karşı ve hangi veri kategorileri işlenir.", tag:"Rehber Bölüm IV–VI" },
+    { id:"karar", title:"Karar akışı", desc:"Beş soruyla geçerli işleme dayanağını belirle.", tag:"Rehber Bölüm V–VII" },
+    { id:"acikriza", title:"Açık rıza ve ilkeler", desc:"Ne zaman rıza alınır, ne zaman alınmaz; KVKK m.4 ilkeleri.", tag:"Rehber Bölüm VII-A, IX" },
+    { id:"uyarilar", title:"Yapılmaması gerekenler", desc:"Rehberdeki hatalı örneklerden çıkarılmış sekiz uyarı.", tag:"Rehber Bölüm VII-C, X, XI" },
+    { id:"senaryolar", title:"Senaryolar", desc:"Gelen on bir tipik durum için yapılacaklar.", tag:"Rehber Bölüm VII-C, X, XI" },
+    { id:"aktarim", title:"Aktarım rehberi", desc:"Yurt içi ve yurt dışı aktarımın üç kademeli rejimi.", tag:"Rehber Bölüm VIII" },
+    { id:"yukumlulukler", title:"Yükümlülük panosu", desc:"Altı yükümlülük, süreler ve dayanaklar.", tag:"Rehber Bölüm X" },
+    { id:"belgeler", title:"Belge üretici", desc:"Rehberin gerektirdiği sekiz belgeyi doldurup yazdır.", tag:"Rehber Bölüm X, XII" },
+    { id:"guvenlik", title:"Veri güvenliği başlıkları", desc:"Rehberin işaret ettiği tedbir başlıkları ve Kurum kaynaklarına yönlendirme.", tag:"Rehber Bölüm XI" },
+    { id:"kaynak", title:"Kaynak ve künye", desc:"Dayanak belge, künye ve Kurul kararları dizini.", tag:"Rehber Bölüm I–III, XIII" }
+  ];
+
+  const GUIDE_MAP = [
+    ["I–III", "Giriş · Kurum tanıtımı · Amaç ve kapsam", "Ana sayfa · Kaynaklar"],
+    ["IV", "Veri sorumlusu ve veri işleyen", "İlgili kişiler ve veriler"],
+    ["V", "İlgili kişi", "İlgili kişiler ve veriler · Karar akışı"],
+    ["VI", "İşlenen kişisel veriler", "İlgili kişiler ve veriler · Karar akışı"],
+    ["VII", "Kişisel verileri işleme şartları", "Karar akışı · Açık rıza ve ilkeler"],
+    ["VIII", "Kişisel verilerin aktarılması", "Aktarım rehberi"],
+    ["IX", "Genel ilkeler", "Açık rıza ve ilkeler"],
+    ["X", "Veri sorumlusunun yükümlülükleri", "Yükümlülük panosu · Belge üretici"],
+    ["XI", "Veri güvenliği", "Veri güvenliği başlıkları"],
+    ["XII", "Tavsiyeler", "Belge üretici · Veri güvenliği başlıkları"],
+    ["XIII", "Kaynaklar", "Kaynak ve künye"]
+  ];
+
+  const NAC = "Başka bir işleme dayanağı varken ayrıca açık rıza almak, ilgili kişiyi yanıltıcı olabileceği için hukuka ve dürüstlük kuralına aykırılık oluşturabilir.";
+
+  const OBLIGATIONS = [
+    { n:"Aydınlatma yükümlülüğü", dayanak:"KVKK m.10 · Aydınlatma Tebliği",
+      what:"Veri sorumlusunun kimliği, işleme amacı, verilerin aktarılabileceği taraflar, toplama yöntemi ve hukuki sebep ile ilgili kişinin hakları bildirilir.",
+      when:"Kural olarak veri elde edilirken; veri kişiden doğrudan alınmadıysa makul süre içinde, ilk iletişimde veya ilk aktarım sırasında.",
+      watch:"Aydınlatma, açık rızadan bağımsız ayrı bir yükümlülüktür; rıza alınmasa da yapılmalıdır." },
+    { n:"Veri Sorumluları Sicili", dayanak:"KVKK m.16 · Kurul 02.04.2018, 2018/32",
+      what:"Kişisel veri işleyenlerin sicile kaydolması kuraldır; avukatlar Kurul kararıyla bu yükümlülükten muaftır.",
+      when:"Faaliyete başlamadan önce — avukatlar için muafiyet geçerlidir.",
+      watch:"Bu muafiyet yalnızca sicil kaydı içindir; aydınlatma, güvenlik ve diğer yükümlülükler devam eder. En sık yapılan hata, muafiyeti 'hiç yükümlülüğüm yok' sanmak." },
+    { n:"Saklama ve imha", dayanak:"KVKK m.7, m.13 · Av.K. m.39 · TBK m.147",
+      what:"İşleme sebepleri ortadan kalkınca veriler silinir, yok edilir veya anonim hâle getirilir; ilgili kişinin talebi karşılanır.",
+      when:"Talep en geç 30 gün içinde sonuçlandırılır. Tevdi edilen evrak Av.K. m.39 gereği 3 yıl; yazılı geri alım bildirimi yapılmışsa 3 ay. Vekâlet alacağı varsa 5 yıla kadar saklama değerlendirilir.",
+      watch:"Ret hâlinde gerekçe, saklama dayanağı ve muhafaza süresi ilgili kişiye açıkça bildirilir." },
+    { n:"İlgili kişinin hakları ve başvurular", dayanak:"KVKK m.11, m.13 · Başvuru Tebliği",
+      what:"Erişim, düzeltme, silme, aktarım bilgisi ve itiraz talepleri karşılanır; başvurular kayda alınır.",
+      when:"Talebin niteliğine göre en kısa sürede ve en geç 30 gün içinde, ücretsiz.",
+      watch:"Şikâyetler genellikle 'verimi hangi kaynaktan aldınız' sorusunda düğümlenir; kaynağı tevsik edememek asıl risk. İletişim bilgileri güncel tutulmalı." },
+    { n:"Kurul kararlarını yerine getirme", dayanak:"KVKK m.15/5",
+      what:"Kurul'un tespit ettiği hukuka aykırılıkların giderilmesi ve yayımlanan ilke kararlarına uyulması.",
+      when:"Tebliğden itibaren gecikmeksizin ve en geç 30 gün içinde.",
+      watch:"Veri sorgulamaya imkân tanıyan yazılım ve uygulamaların kullanılmaması (Kurul 18.10.2019, 2019/308 ilke kararı) bu kapsamdadır." },
+    { n:"Veri ihlalinin bildirilmesi", dayanak:"KVKK m.12/5 · Kurul 24.01.2019, 2019/10",
+      what:"Kişisel verilerin kanuni olmayan yollarla elde edilmesi hâlinde Kuruma ve ilgili kişilere bildirim.",
+      when:"İhlalin öğrenilmesinden itibaren en kısa sürede; Kuruma en geç 72 saat içinde. İlgili kişilere, ulaşılabiliyorsa doğrudan, değilse uygun yöntemlerle.",
+      watch:"Olayın kapsamı, etkilenen kişi ve veri türleri ile özel nitelikli veri bulunup bulunmadığı değerlendirilmelidir." }
+  ];
+
+  const SURELER = [
+    ["30 gün","İlgili kişinin başvurusuna cevap","KVKK m.13"],
+    ["30 gün","Kurul kararının yerine getirilmesi","KVKK m.15/5"],
+    ["72 saat","Veri ihlalinin Kuruma bildirilmesi","KVKK m.12/5 · Kurul 2019/10"],
+    ["3 yıl","Tevdi edilen evrakın saklanması (yazılı bildirimle 3 ay)","Av.K. m.39"],
+    ["5 yıl","Vekâlet alacağı için değerlendirilen azami saklama","TBK m.147"],
+    ["5 iş günü","Standart sözleşmenin Kuruma bildirilmesi","KVKK m.9/5"],
+    ["60 gün","İhlal bildiriminin Kurum sitesinde ilanı","Kurul 25.12.2025, 2025/2451"],
+    ["mevzuata göre","Diğer saklama süreleri — süre hukuki düzenlemelerle veya işleme amacıyla belirlenir; her veri türü için ayrıca değerlendirilmelidir","Bölüm IX-E"],
+    ["10 yıl","Muhasebe ve finansal kayıtlar (ticari defter ve belgeler)","TTK m.82 · VUK m.253"],
+    ["10 yıl","Çalışan özlük dosyaları (iş ilişkisinin sona ermesinden itibaren)","İş Kanunu · TBK"]
+  ];
+
+  const PEOPLE = [
+    { n:"Müvekkil ve potansiyel müvekkil", dayanak:"KVKK m.5/2-c, m.5/2-ç · Av.K. m.36 · TBK m.505",
+      expect:"Verisini yalnızca hukuki hizmet amacıyla işleyin; aydınlatın; sır saklama ve özen gösterin; erişim, düzeltme ve silme taleplerini karşılayın.",
+      risk:"Gereksiz veri toplamak, randevu ve iletişim verisini amaç dışı kullanmak. Rehber örneğinde sekreter, arayan kişinin yalnızca kimlik ve iletişim verisini randevu amacıyla kaydeder; talebin içeriğine dair veri işlemez." },
+    { n:"Uyuşmazlığın karşı tarafı", dayanak:"KVKK m.5/2-e, m.5/2-a · İİK m.89 · Kurul 2020/26, 2023/78",
+      expect:"Veriyi yalnızca hakkın tesisi, kullanılması veya korunması için işleyin; kaynağı belgeleyin; üçüncü kişilere dava ve icra gerekleri ölçüsünde açıklayın.",
+      risk:"Borç bilgisini ilgisiz kişilere ulaştırmak. Rehberdeki iki örnek: borç bilgisinin borçlunun kardeşine kısa mesajla iletilmesi; borçlunun şirketine ait kurumsal numarada borç bilgisinin ilgisiz çalışanlarca görülmesi." },
+    { n:"Tanıklar", dayanak:"KVKK m.5/2-e, m.6 · Kurul 2018/10",
+      expect:"Yalnızca dava için gerekli bilgiyi alın; özel nitelikli veri varsa ek önlem alın; veriyi nereden elde ettiğinizi kaydedin.",
+      risk:"Tanığa ait sağlık veya sendikal bilgilerin dosyaya gereğinden fazla girmesi; kaynağın sonradan tevsik edilememesi." },
+    { n:"Üçüncü kişiler ve karşı tarafın çevresi", dayanak:"KVKK m.12 · KVKK m.4 (ölçülülük)",
+      expect:"Dosyadaki verilerin yalnızca ilgililerce görülmesini sağlayın; fiziksel ortam güvenliğini kurun.",
+      risk:"Rehberin iki örneği: kafeteryada ortada bırakılan dosyanın müvekkilin iş arkadaşı tarafından incelenmesi; araçta duran dosyanın kapağından komşunun boşanma davasını öğrenmesi." },
+    { n:"Meslektaşlar", dayanak:"KVKK m.3/1-ğ, m.8 · Kurul 2021/115, 2021/424",
+      expect:"Tevkil olunan avukata yalnızca gereken veriyi aktarın; karşı taraf vekiline dava gerekleri ölçüsünde bilgi verin.",
+      risk:"Tevkil sınırının aşılması: duruşmaya giren avukat kural olarak veri işleyen iken, tevkil dışına çıkıp kendi vekâletini kurduğunda veri sorumlusuna dönüşür." },
+    { n:"Mahkeme, savcılık ve kamu kurumları", dayanak:"KVKK m.8 · HMK m.219, m.221 · Kurul 2023/1578, 2023/1414",
+      expect:"Taleple sınırlı belge sunun; sunumda ölçülülüğü gözetin; aktarımı hukuki bir zemine oturtun.",
+      risk:"'Yargı makamı istisnası bizi kapsar' yanılgısı: Kanunun 28. maddesindeki istisna avukatlara uygulanmaz. Ancak mahkemeye yapılan sunum, aktarım kuralları ve özel kanun hükümleri kapsamında hukuka uygun olabilir." },
+    { n:"Büro çalışanları ve dış hizmet sağlayıcılar", dayanak:"KVKK m.8, m.9, m.12 · Bölüm XII tavsiyeleri",
+      expect:"Çalışanların kendi verileri için de aydınlatın; erişim yetkisini göreve göre sınırlayın; eğitim verin; dış hizmet sağlayıcıya aktarımı ayrı değerlendirin.",
+      risk:"Dosyayı yurt dışı mukim bir yapay zekâ aracına yüklemek: yurt dışına aktarım doğabilir, veri güvenliği yükümlülükleri ayrıca değerlendirilir." }
+  ];
+
+  const COMMON = [
+    { n:"Aydınlatma", d:"Kimin işlediği, amaç, aktarım, toplama yöntemi ve hukuki sebep ile haklar bildirilir." },
+    { n:"Veri güvenliği", d:"Hukuka aykırı işlemeyi ve erişimi önleyecek teknik ve idari tedbirler; ihlalde 72 saat içinde bildirim." },
+    { n:"Haklar ve başvuru", d:"Erişim, düzeltme, silme ve itiraz; başvuru en geç 30 günde sonuçlandırılır, ret gerekçeli olur." }
+  ];
+
+  const WARNINGS = [
+    { n:"İlgisiz kişilere borç bilgisi iletmek", why:"Borç bilgisi, işleme şartı bulunmaksızın üçüncü kişilere açılmış olur.", d:"Kurul 2020/26 · Kurul 2023/78 · Kurul 2023/437" },
+    { n:"Borçlunun yakınına veya iş çevresine bilgi göndermek", why:"Yakına çekilen mesaj, caydırma amacı taşısa bile hukuka uygun işleme sayılmaz.", d:"Kurul 14.01.2020 · 2020/26" },
+    { n:"Veri sorgulayan yazılım ve uygulamaları kullanmak", why:"Hukuka aykırı elde edilmiş verilerle sorgulama, veri güvenliği yükümlülüğüne aykırılık oluşturur. Kurul, konunun Türk Ceza Kanunu kapsamında gerekli adli işlemler için ihbaren yetkili Cumhuriyet Başsavcılıklarına iletileceğini de belirtmiştir.", d:"Kurul 18.10.2019 · 2019/308 ilke kararı · Bölüm VII-C" },
+    { n:"Adli sicil kaydına resen erişmeye çalışmak", why:"Adli sicil bilgilerine resen erişim yetkisi verilmediği için bu yoldan elde edilen veri hukuka aykırı sayılır.", d:"Adli Sicil Kanunu m.7 (özel hüküm) · Kurul 02.11.2021, 2021/1111" },
+    { n:"Dosyayı herkese açık ortamda bırakmak", why:"Alınmayan fiziksel tedbir, verilerin üçüncü kişilerce öğrenilmesine yol açar.", d:"KVKK m.12 · Rehber Bölüm XI örneği" },
+    { n:"Dosya kapağına veya görünen yüzeye hassas bilgi yazmak", why:"Dosya adı ve konusu tek başına dahi ilgili kişiye ait hassas veri açıklar.", d:"KVKK m.12, m.4 (ölçülülük)" },
+    { n:"Başka dayanak varken açık rıza imzalatmak", why:"Açık rıza diğer dayanaklarla birlikte kullanılamaz; hizmeti rızaya bağlamak yanıltıcı olur.", d:"KVKK m.5/2 · Rehberin açık rıza bölümü" },
+    { n:"Dosyayı yurt dışı mukim bir yapay zekâ aracına yüklemek", why:"Hizmet sağlayıcı yurt dışında ise aktarım doğabilir; güvenlik yükümlülüğü ayrıca işler.", d:"KVKK m.9, m.12 · Rehber Bölüm VIII-C" }
+  ];
+
+  const SCENARIOS = [
+    { n:"Müvekkil adayı aradı veya büroya geldi", src:"Rehberde var",
+      steps:["İlk temasta kısa ön bilgilendirme yapın (kim işliyor, hangi amaçla, hangi haklar).","Yalnızca randevu ve iletişim için gereken veriyi alın; talebin içeriğine girmeyin.","Karşılamada kayıt tutuluyorsa bunu önceden bildirin."],
+      docs:["Aydınlatma metni (müvekkil)"],
+      dayanak:"KVKK m.10 · Aydınlatma Tebliği · Rehberin avukatlık ortaklığı örneği" },
+    { n:"Görüşme yapıldı, sözleşme kuruldu", src:"Rehberde var",
+      steps:["Yazılı aydınlatma metnini sunun.","Başka dayanak varken açık rıza imzalatmayın.","Hangi verinin hangi kaynaktan geldiğini kaydedin."],
+      docs:["Avukatlık sözleşmesi","Veri işleme kayıt notu","Aydınlatma metni (müvekkil)"],
+      dayanak:"KVKK m.5/2-c, m.10 · Bölüm XII tavsiyeleri" },
+    { n:"Karşı taraf veya borçlu — ihtar, icra takibi", src:"Rehberde var",
+      steps:["Veriyi yalnızca hakkı tesis veya koruma amacıyla işleyin.","Borç bilgisini ilgisiz kişilere göndermeyin.","Veriyi nereden aldığınızı belgeleyebilir hâlde tutun."],
+      docs:["Takip veya ihtar evrakı"],
+      dayanak:"KVKK m.5/2-e · İİK m.89 · Kurul 2020/26" },
+    { n:"Tanıkla görüşüldü", src:"Rehberde var",
+      steps:["Yalnızca dava için gerekli bilgiyi alın.","Özel nitelikli veri varsa ek önlem alın.","Verinin kaynağını kaydedin; aydınlatmayı makul sürede tamamlayın."],
+      docs:["Tanık görüşme tutanağı","Aydınlatma metni (tanığın verisi işleniyorsa)"],
+      dayanak:"KVKK m.5/2-e, m.6 · Kurul 2018/10, 2021/925" },
+    { n:"Kurumdan veya UYAP üzerinden bilgi isteniyor", src:"Rehberde var",
+      steps:["Yalnızca yetkili kanalları kullanın.","Veri sorgulayan yasak yazılımlara başvurmayın.","Talebi dava gerekleriyle sınırlayın."],
+      docs:["Bilgi talebi yazısı ve dayanağı"],
+      dayanak:"KVKK m.5/2-a · Kurul 18.10.2019, 2019/308 ilke kararı · Mal, Hak veya Alacağın UYAP Üzerinden Sorgulanması Hakkında Yönetmelik (22.01.2022)" },
+    { n:"Mahkemeye veya savcılığa belge sunulacak", src:"Rehberde var",
+      steps:["Sunumu taleple sınırlı tutun.","İstisna yanılgısına düşmeyin: Kanunun 28. maddesi avukatı kapsamaz.","Sunumun dayanağını dosyaya yazın."],
+      docs:["Sunum dilekçesi ve ekleri"],
+      dayanak:"KVKK m.8, m.28 · HMK m.219, m.221 · Kurul 2023/1578" },
+    { n:"İlgili kişi başvurusu geldi", src:"Rehberde var",
+      steps:["Başvuruyu kayda alın ve niteliğine göre değerlendirin.","Veriyi nereden elde ettiğinizi açıklayabilir durumda olun.","En geç 30 gün içinde ücretsiz sonuçlandırın."],
+      docs:["Başvuru formu","Cevap yazısı"],
+      dayanak:"KVKK m.11, m.13 · Başvuru Usul ve Esasları Tebliği" },
+    { n:"Dosya kayboldu veya ihlal şüphesi", src:"Rehberde var",
+      steps:["Olayın kapsamını, etkilenen kişi ve veri türlerini belirleyin.","Özel nitelikli veri bulunup bulunmadığını kontrol edin.","Vakit kaybetmeden Kuruma ve ilgili kişilere bildirin."],
+      docs:["Veri ihlali bildirim formu"],
+      dayanak:"KVKK m.12/5 · Kurul 24.01.2019, 2019/10" },
+    { n:"Dosya kapandı — saklama ve imha", src:"Rehberde var",
+      steps:["Saklama süresini belirleyin.","Süre bitince silin, yok edin veya anonim hâle getirin.","Silme talebini 30 günde yanıtlayın; reddediyorsanız gerekçe yazın."],
+      docs:["İmha kararı ve dayanağı (kurum içi not)"],
+      dayanak:"KVKK m.7, m.13 · Av.K. m.39 · TBK m.147" },
+    { n:"Büroya personel alındı", src:"Rehberde var",
+      steps:["Personelin kendi verisi için de aydınlatın.","Erişim yetkisini göreve göre sınırlayın.","Kişisel verilerin korunması eğitimi verin."],
+      docs:["Çalışan aydınlatma metni"],
+      dayanak:"KVKK m.12 · Bölüm XII tavsiyeleri" },
+    { n:"Yapay zekâ aracı kullanılacak veya yurt dışına aktarım", src:"Rehberde var",
+      steps:["Aracın veri politikasını ve sunucu konumunu inceleyin.","Maskeleme veya anonimleştirme uygulayın; özel nitelikli veriyi yüklemeyin.","Büro içi kullanım kuralını yazılı hâle getirin."],
+      docs:["Yapay zekâ araçları kullanım kuralı","Yurt dışı aktarım varsa Kurulun standart sözleşmesi (resmî metin)"],
+      dayanak:"KVKK m.9, m.12 · Rehber Bölüm VIII-C ve XI" }
+  ];
+
+  const DOC_NOTICE = "Bu belge bir taslak ve örnektir; Türkiye Barolar Birliği ve Kişisel Verileri Koruma Kurumu tarafından yayımlanan \u201cAvukatların Mesleki Faaliyetlerinde Kişisel Verilerin Korunmasına İlişkin Uygulama Rehberi\u201dnden (KVKK Yayınları No: 115, Temmuz 2026) faydalanılarak hazırlanmıştır. Hukuki tavsiye niteliği taşımaz; kullanmadan önce durumunuza uyarlayın. Bu belge, KVKK ve TBB'nin resmî görüşünü veya onayını temsil etmez.";
+
+  const DOC_TYPES = [
+    { id:"aydinlatmaMusteri", title:"Müvekkil aydınlatma metni", dayanak:"KVKK m.10 · Aydınlatma Tebliği",
+      purpose:"Hukuki yardım için başvuran müvekkil veya potansiyel müvekkili bilgilendirmek.",
+      fields:[
+        { id:"sorumlu", label:"Veri sorumlusu (avukat / büro adı)", ph:"Örn. Av. … / … Avukatlık Ortaklığı" },
+        { id:"iletisim", label:"İletişim ve başvuru kanalı", ph:"Adres, telefon, e-posta veya KEP", type:"textarea" },
+        { id:"amac", label:"İşleme amacı", ph:"Hukuki danışmanlık, dava ve takip yürütme, müvekkil ilişkisinin yönetimi", type:"textarea" },
+        { id:"aktarim", label:"Aktarılabilecek taraflar", ph:"Mahkemeler, icra daireleri, karşı taraf vekili, arabulucu, bilirkişi", type:"textarea" },
+        { id:"yontem", label:"Toplama yöntemi ve hukuki sebep", ph:"Örn. avukatlık sözleşmesinin ifası ve hakkın korunması amacıyla, doğrudan görüşme ve belge teslimi yoluyla", type:"textarea" }
+      ] },
+    { id:"aydinlatmaCalisan", title:"Çalışan ve stajyer aydınlatma metni", dayanak:"KVKK m.10 · m.6/3-f (istihdam, iş sağlığı ve güvenliği)" ,
+      purpose:"Büroda çalışan avukat, stajyer ve yardımcı personelin özlük verileri için bilgilendirmek.",
+      fields:[
+        { id:"sorumlu", label:"Veri sorumlusu (büro)", ph:"Avukat / büro adı" },
+        { id:"iletisim", label:"İletişim ve başvuru kanalı", ph:"Adres, e-posta veya KEP", type:"textarea" },
+        { id:"amac", label:"İşleme amacı", ph:"Özlük dosyası yönetimi, sosyal güvenlik bildirimleri, iş sağlığı ve güvenliği yükümlülükleri", type:"textarea" },
+        { id:"aktarim", label:"Aktarılabilecek taraflar", ph:"Sosyal Güvenlik Kurumu, mali müşavir, banka, yetkili kamu kurumları", type:"textarea" },
+        { id:"saklama", label:"Saklama süresi notu", ph:"Örn. mevzuattan doğan süreler boyunca (özlük ve SGK kayıtları)", type:"textarea" }
+      ] },
+    { id:"aydinlatmaWeb", title:"Web sitesi ve iletişim aydınlatma metni", dayanak:"KVKK m.10 · Aydınlatma Tebliği",
+      purpose:"İnternet sitesi, iletişim formu ve randevu kanallarındaki ilgili kişileri bilgilendirmek.",
+      fields:[
+        { id:"sorumlu", label:"Veri sorumlusu (büro)", ph:"Avukat / büro adı" },
+        { id:"iletisim", label:"İletişim ve başvuru kanalı", ph:"Adres, e-posta veya KEP", type:"textarea" },
+        { id:"amac", label:"İşleme amacı", ph:"İletişim taleplerinin yanıtlanması, randevu oluşturulması, mesleki tanıtım", type:"textarea" },
+        { id:"aktarim", label:"Aktarılabilecek taraflar", ph:"Barındırma ve e-posta hizmet sağlayıcıları", type:"textarea" }
+      ] },
+    { id:"cevap", title:"İlgili kişi başvurusuna cevap yazısı", dayanak:"KVKK m.11, m.13 · Av.K. m.39 · TBK m.147",
+      purpose:"İlgili kişinin başvurusunu sonuçlandırmak veya gerekçesini açıklayarak reddetmek.",
+      fields:[
+        { id:"muhatap", label:"Başvuran kişi", ph:"Ad soyad" },
+        { id:"tarih", label:"Başvuru tarihi", ph:"gg.aa.yyyy" },
+        { id:"talep", label:"Talep konusu", ph:"Örn. hangi verilerin işlendiğinin öğrenilmesi", type:"textarea" },
+        { id:"karar", label:"Sonuç", type:"select", options:["Kabul — talep yerine getirildi","Kısmen kabul","Ret"] },
+        { id:"gerekce", label:"Ret gerekçesi (ret veya kısmen kabul hâlinde)", type:"select", options:["Uygulanmaz","Av.K. m.39 gereği saklama yükümlülüğü","TBK m.147 gereği vekâlet alacağı nedeniyle muhafaza","Derdest dava veya takip dosyasında delillerin muhafazası zorunluluğu","Talep, veri sorumlusunun işlediği verilere ilişkin değil","Başvuruda kimlik veya ehliyet doğrulaması yapılamadı","Aynı talep için daha önce cevap verilmiş olması"] },
+        { id:"kaynak", label:"Verinin elde edildiği kaynak (varsa)", ph:"Örn. icra dosyası, müvekkil beyanı", type:"textarea" }
+      ] },
+    { id:"ihlal", title:"Veri ihlali bildirim formu", dayanak:"KVKK m.12/5 · Kurul 24.01.2019, 2019/10",
+      purpose:"İhlali Kuruma ve gerektiğinde ilgili kişilere bildirmek.",
+      fields:[
+        { id:"sorumlu", label:"Veri sorumlusu", ph:"Avukat / büro adı" },
+        { id:"olay", label:"İhlalin niteliği", ph:"Örn. dosyanın kaybedilmesi" },
+        { id:"tarih", label:"İhlal / öğrenme tarihi", ph:"gg.aa.yyyy" },
+        { id:"etkilenen", label:"Etkilenen kişi ve veri türleri", ph:"Örn. 3 kişi; kimlik, iletişim, sağlık", type:"textarea" },
+        { id:"ozel", label:"Özel nitelikli veri var mı", ph:"Var / Yok" },
+        { id:"onlem", label:"Alınan ve alınacak önlemler", ph:"Kısa açıklama", type:"textarea" }
+      ] },
+    { id:"basvuruFormu", title:"İlgili kişi başvuru formu", dayanak:"KVKK m.11, m.13 · Başvuru Usul ve Esasları Tebliği",
+      purpose:"İlgili kişinin veri sorumlusuna yapacağı başvurunun içeriğini kayda geçirmek.",
+      fields:[
+        { id:"adsoyad", label:"Başvuran ad soyad", ph:"Ad soyad" },
+        { id:"iletisim", label:"İletişim (adres, telefon, e-posta)", ph:"Başvuranın iletişim bilgisi" },
+        { id:"talep", label:"Talep konusu", ph:"Örn. işlenen verilerin öğrenilmesi", type:"textarea" },
+        { id:"ayrinti", label:"Talebin ayrıntısı", ph:"Kısa açıklama", type:"textarea" },
+        { id:"tarih", label:"Tarih", ph:"gg.aa.yyyy" }
+      ] },
+    { id:"kayitNotu", title:"Veri işleme kayıt notu", dayanak:"Rehber Bölüm XII tavsiyeleri",
+      purpose:"Hangi verinin hangi kaynaktan, hangi amaçla işlendiğini izlenebilir kılmak.",
+      fields:[
+        { id:"dosya", label:"Dosya veya iş", ph:"Örn. icra dosyası 2026/…" },
+        { id:"veriler", label:"İşlenen veri kategorileri", ph:"Örn. kimlik, iletişim, mali", type:"textarea" },
+        { id:"kaynak", label:"Verinin kaynağı", ph:"Örn. müvekkil beyanı, icra dosyası, kamuya açık kaynak", type:"textarea" },
+        { id:"amac", label:"İşleme amacı", ph:"Örn. takip yürütme" },
+        { id:"dayanak", label:"Hukuki dayanak", ph:"Örn. KVKK m.5/2-e" },
+        { id:"sure", label:"Saklama süresi", ph:"Örn. vekâlet sonrası 3 yıl" }
+      ] },
+    { id:"yzKural", title:"Yapay zekâ araçları kullanım kuralı", dayanak:"Rehber Bölüm VIII-C ve XI · KVKK m.9, m.12",
+      purpose:"Büroda üretken yapay zekâ araçlarının hangi sınırlarla kullanılacağını yazılı hâle getirmek.",
+      fields:[
+        { id:"buro", label:"Büro", ph:"Avukat / büro adı" },
+        { id:"araclar", label:"Kullanımına izin verilen araçlar", ph:"Örn. yalnızca kurumsal sözleşmeli araçlar" },
+        { id:"yasak", label:"Yüklenmesi yasak veriler", ph:"Örn. özel nitelikli veriler, müvekkil dosyaları", type:"textarea" },
+        { id:"maske", label:"Maskeleme kuralı", ph:"Örn. isim ve kimlik numaraları gizlenir", type:"textarea" },
+        { id:"kayit", label:"Kayıt ve denetim", ph:"Kullanımın kaydedilmesi / gözden geçirilmesi" },
+        { id:"sorumlu", label:"Sorumlu", ph:"Görev" }
+      ] }
+  ];
+
+  /* Her şablonun rehberdeki karşılığı */
+  const DOC_SRC = {
+    aydinlatmaMusteri:"Rehber Bölüm X-A",
+    aydinlatmaCalisan:"Rehber Bölüm X-A · IV-B",
+    aydinlatmaWeb:"Rehber Bölüm X-A",
+    cevap:"Rehber Bölüm X-D",
+    basvuruFormu:"Rehber Bölüm X-D",
+    kayitNotu:"Rehber Bölüm XII",
+    ihlal:"Rehber Bölüm X-F",
+    yzKural:"Rehber Bölüm VIII-C · XI"
+  };
+
+  const CONSENT_ELEMENTS = [
+    { n:"Belirli bir konuya ilişkin", d:"Genel ve toptan rıza geçerli değildir; her işleme amacı ayrı ayrı gösterilir." },
+    { n:"Bilgilendirmeye dayanan", d:"Rızadan önce açık ve anlaşılır bilgilendirme yapılır; kişi sonuçlarını bilmelidir." },
+    { n:"Özgür iradeyle açıklanan", d:"Hizmetin koşulu hâline getirilen rıza özgür sayılmaz; rıza geri çekilebilir olmalıdır." }
+  ];
+  const CONSENT_NEED = [
+    "Kanunun 5. maddesinin ikinci fıkrasındaki şartlardan ve 6. maddenin üçüncü fıkrasındaki hâllerden hiçbiri bulunmuyorsa.",
+    "İşleme için elinde kalan tek dayanak açık rıza ise.",
+    "Yurt dışına aktarımda yeterlilik kararı ve uygun güvence yokken arızi hâllere dayanılıyorsa."
+  ];
+  const CONSENT_NOT = [
+    "Sözleşmenin kurulması veya ifası için veri işliyorsan (m.5/2-c).",
+    "Hakkın tesisi, kullanılması veya korunması için işliyorsan (m.5/2-e).",
+    "Kanunda açıkça öngörülmüş bir yükümlülüğü yerine getiriyorsan (m.5/2-a, m.5/2-ç).",
+    "Kanunda öngörülen hâllerde özel nitelikli veri işliyorsan (m.6/3)."
+  ];
+  const CONSENT_ERRORS = [
+    { n:"Her müvekkile standart rıza formu imzalatmak", d:"Sözleşmenin ifası zaten dayanakken alınan rıza yanıltıcı olabilir; hukuka ve dürüstlük kuralına aykırılık riski doğar." },
+    { n:"Hizmeti rızaya bağlamak", d:"'Rıza vermezseniz hizmet sunulamaz' ifadesi, rızayı özgür iradeye dayanmaktan çıkarır." },
+    { n:"Rızayı geri alınamaz gibi sunmak", d:"Rıza her an geri çekilebilir; geri çekilse de işlemeye devam edilecekse bu açıkça yazılmalıdır." },
+    { n:"Bilgilendirmeyi rızadan sonra yapmak", d:"Bilgilendirme rızadan önce ve işlemenin bütün konularını kapsayacak biçimde yapılır." }
+  ];
+  const PRINCIPLES = [
+    { n:"Hukuka ve dürüstlük kurallarına uygun olma", d:"İşleme, bir hukuki sebebe dayanmalı ve kişinin makul beklentileri ile menfaatleri gözetilmelidir." },
+    { n:"Doğru ve gerektiğinde güncel olma", d:"Doğruluk amaçla ölçülür: delil olarak saklanan yanlış yazışma düzeltilmez; ikamet değişikliği ise düzeltilir." },
+    { n:"Belirli, açık ve meşru amaçlar için işlenme", d:"İşlemeye başlamadan amaçlar sıralanır ve sınırlanır; sonradan eklenen amaç ilk amaçla uyumlu olmalıdır." },
+    { n:"Amaçla bağlantılı, sınırlı ve ölçülü olma", d:"Gerekenin üzerinde veri işlemek ihlaldir; işlenen her verinin gerekli olduğunu ispat yükü avukattadır." },
+    { n:"Öngörülen süre kadar muhafaza etme", d:"Süre mevzuattan veya amaçtan doğar; Av.K. m.39 ve TBK m.147 ile birlikte değerlendirilir." }
+  ];
+  const TRANSFER = [
+    { tag:"Yurt içi", title:"Yurt içinde aktarım", dayanak:"KVKK m.8 · İİK m.89 · Kurul 2021/909, 2021/1069",
+      body:["Kişisel veriler, ilgili kişinin açık rızası olmaksızın aktarılamaz; ancak 5. maddenin ikinci fıkrasındaki şartlar veya yeterli önlemler alınmak kaydıyla 6. maddenin üçüncü fıkrasındaki şartlardan birinin bulunması hâlinde açık rıza aranmaksızın aktarılabilir.",
+            "Diğer kanunlarda aktarıma ilişkin özel hükümler saklıdır; dayanağı somut hükme bağlamak gerekir.",
+            "Uygulamada: müvekkilin hukuki yararını ispat için elde edilen bilgi ve belgenin arabulucuya, yargı makamına veya icra dairesine sunulması bu kapsamda değerlendirilir."] },
+    { tag:"Yurt dışı", title:"Yurt dışına aktarım — üç kademe", dayanak:"KVKK m.9 (7499 sayılı Kanunla değişik)",
+      body:["1 · Yeterlilik kararı: Kurul, aktarım yapılacak ülke, sektör veya uluslararası kuruluş için yeterlilik kararı verebilir; karar en geç dört yılda bir değerlendirilir.",
+            "2 · Uygun güvenceler: yeterlilik kararı yoksa uluslararası anlaşma niteliğinde olmayan anlaşma, bağlayıcı şirket kuralları, standart sözleşme veya yazılı taahhütname ile aktarım yapılabilir. Standart sözleşme, imzalandıktan sonra beş iş günü içinde Kuruma bildirilir.",
+            "3 · Arızi hâller: bunlar da yoksa yalnızca arızi olmak kaydıyla; açık rıza, sözleşmenin ifası, üstün kamu yararı, hakkın korunması, fiili imkânsızlık veya kamuya açık sicilden aktarım mümkündür."] },
+    { tag:"Yapay zekâ", title:"Üretken yapay zekâ araçları", dayanak:"Rehber Bölüm VIII-C ve XI · KVKK m.9, m.12",
+      body:["Dosya veya kişisel veri içeren belgeyi yurt dışı mukim bir araca yüklemek, veri aktarımı doğurabilir; aracın sunucularının ve alt hizmet sağlayıcılarının konumu belirleyicidir.",
+            "Araç yurt içinde olsa bile, belgenin sağlayıcıya aktarılması m.8 kapsamında değerlendirilir.",
+            "Önerilen tedbirler: maskeleme veya anonimleştirme, özel nitelikli veriyi yüklemekten kaçınma, amaca yeten asgari veriyle çalışma, aracın saklama ve model eğitimi politikasını inceleme, büro içi kullanım kuralı belirleme."] }
+  ];
+
+  const SECURITY = [
+    { group:"Rehberin doğrudan istediği", items:[
+      "Kanunun 12. maddesi gereği kişisel verilerin hukuka aykırı işlenmesini ve hukuka aykırı erişilmesini önlemek, muhafazasını sağlamak için gerekli teknik ve idari tedbirleri almak.",
+      "Alınacak önlemleri kendi yapına, faaliyetlerine ve tabi olduğun risklere uygun biçimde belirlemek.",
+      "İş süreçlerinin analizini ve risk değerlendirmesini yapmak; belirlenen tedbirleri etkin biçimde yürürlüğe koymak.",
+      "Veri ihlali bildirim akışını ve sorumlusunu önceden belirlemek; ihlalde Kuruma en geç 72 saat içinde, ilgili kişilere en kısa sürede bildirmek (m.12/5)."
+    ]},
+    { group:"Kurum kaynaklarına başvurulacak başlıklar", items:[
+      "Kurumun Kişisel Veri Güvenliği Rehberi'ndeki teknik ve idari tedbirleri inceleyip uygulamak — rehber bu başlıkta ayrıntıyı o dokümana bırakıyor.",
+      "Özel nitelikli kişisel veri işleniyorsa Kurulun 31.01.2018 tarihli ve 2018/10 sayılı kararındaki yeterli önlemleri almak."
+    ]},
+    { group:"Rehberin yasakladığı ve önerdiği", items:[
+      "Kişisel verilere erişmek için hukuka aykırı elde edilmiş verilerle sorgulama yapan yazılım, program ve uygulamaları kullanmamak (Kurul 18.10.2019, 2019/308 ilke kararı).",
+      "Üretken yapay zekâ araçlarında veriyi mümkün olduğunca maskelemek veya anonimleştirmek, özel nitelikli veriyi yüklememek, amaca yeten asgari veriyle çalışmak ve büro içi kullanım kuralı belirlemek.",
+      "Görevlendirilen büro çalışanlarına kişisel verilerin korunmasına ilişkin eğitim vermek (Bölüm XII).",
+      "İşlenen kişisel verilerin kimden veya hangi kaynaktan elde edildiği bilgisine sahip olmak ve talep hâlinde tevsik edebilmek (Bölüm XII)."
+    ]}
+  ];
+
+  const DECISIONS = [
+    ["14.01.2020 · 2020/26","Kanunun 28. maddesindeki istisna avukatların faaliyetlerine uygulanmaz."],
+    ["02.04.2018 · 2018/32","Avukatlar Veri Sorumluları Sicili kayıt yükümlülüğünden muaftır."],
+    ["31.01.2018 · 2018/10","Özel nitelikli kişisel verilerin işlenmesinde alınması gereken yeterli önlemler."],
+    ["18.10.2019 · 2019/308","Veri sorgulamaya imkân tanıyan yazılım ve uygulamalara ilişkin ilke kararı."],
+    ["24.01.2019 · 2019/10","Veri ihlali bildiriminde 'en kısa süre' 72 saat olarak yorumlanır."],
+    ["25.12.2025 · 2025/2451","İhlal bildirimlerinin Kurum sitesinde 60 günle sınırlı ilanı."],
+    ["09.09.2021 · 2021/909","İcra takibinde verilerin paylaşımı, hakkın korunması şartına dayanır."],
+    ["21.10.2021 · 2021/1069","Hakkın tesisi veya korunması için veri işleme şartının uygulanışı."],
+    ["16.09.2021 · 2021/925","İşe iade davası dilekçesinde sendikal bilginin kullanımı."],
+    ["09.02.2021 · 2021/424","Avukatın veri işleyen olarak değerlendirildiği hâller."],
+    ["02.11.2021 · 2021/1111","Adli sicil bilgilerine resen erişim yetkisi bulunmadığı."],
+    ["17.08.2023 · 2023/1414","Özel nitelikli verilerin mahkemeye aktarılması."],
+    ["14.09.2023 · 2023/1578","Mahkeme talebiyle sağlık kayıtlarının sunulması."],
+    ["19.01.2023 · 2023/78","Doğru ve gerektiğinde güncel olma ilkesi; ilgisiz üçüncü kişiye veri sızması."],
+    ["09.02.2021 · 2021/115","Avukatın veri işleyen olabileceği hâller."],
+    ["22.03.2023 · 2023/437","Avukatlık faaliyetinde hakkın korunması şartına dayanma."],
+    ["01.12.2022 · 2022/1281","Alenileşmiş veri ve icra sorguları."],
+    ["05.07.2018 · 2018/75","Veri Sorumluları Siciline kayıt yükümlülüğüne ilişkin istisna."],
+    ["07.07.2022 · 2022/655","Ticaret Sicili Gazetesi gibi aleni kaynaklardan elde edilen verilerle takip."],
+    ["11.03.2021 · 2021/228","İlgisi bulunmayan kişilere takip mesajı gönderilmesi."],
+    ["28.05.2020 · 2020/429","İhtimale dayalı olarak akraba ve iş arkadaşı iletişim verisi elde edilmesi."],
+    ["31.05.2019 · 2019/166","Borç bilgisinin ilgisiz bir hatta gönderilmesi."],
+    ["09.02.2021 · 2021/111","İlgili kişinin telefon numarasının dayanaksız elde edilmesi."]
+  ];
+
+  const WIZ = [
+    { id:"kisi", q:"Veri kime ait?",
+      opts:[["musteri","Müvekkil veya potansiyel müvekkil"],["karsi","Karşı taraf, borçlu veya davalı"],["tanik","Tanık"],["ucuncu","Üçüncü kişi"],["calisan","Büro çalışanı, stajyer veya bağlı avukat"],["meslektas","Meslektaş — tevkil olunan avukat"]] },
+    { id:"kaynak", q:"Veriyi nereden aldınız?",
+      opts:[["dogrudan","Doğrudan kişinin kendisinden"],["musteriden","Müvekkilden"],["dosya","Dosya, mahkeme veya kamu kaydı"],["kamuyaacik","Kamuya açık kaynak"]] },
+    { id:"ozel", q:"Veri özel nitelikli mi?",
+      opts:[["yok","Hayır, özel nitelikli değil"],["var","Evet — sağlık, inanç, sendika, ceza mahkûmiyeti, biyometrik veya genetik"]] },
+    { id:"amac", q:"Amacınız ne?",
+      opts:[["takip","Dava veya takip yürütme"],["danisma","Hukuki danışmanlık"],["uyum","Büro işletmesi ve uyum"]] },
+    { id:"ozelhal", q:"Uygulanabilir özel bir hâl var mı?",
+      opts:[["yok","Özel bir hâl yok"],["fiili","Fiili imkânsızlık — kişi rızasını açıklayamıyor"],["mesru","Meşru menfaat"]] }
+  ];
+
+  /* ── yardımcılar ───────────────────────────────────────────────── */
+  const $  = (s, r=document) => r.querySelector(s);
+  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+  /* ── yönlendirme ───────────────────────────────────────────────── */
+  const VIEWS = ["home","karar","yukumlulukler","uyarilar","kisiler","senaryolar","belgeler","acikriza","aktarim","guvenlik","arama","kaynak"];
+  const NAV_LABEL = { home:"Ana sayfa", karar:"Karar akışı", yukumlulukler:"Yükümlülükler", uyarilar:"Uyarılar", kisiler:"İlgili kişiler", senaryolar:"Senaryolar", belgeler:"Belgeler", acikriza:"Açık rıza", aktarim:"Aktarım", guvenlik:"Güvenlik", arama:"Arama", kaynak:"Kaynaklar" };
+
+  const NAV_GROUPS = [
+    ["home"],
+    ["karar","acikriza","aktarim"],
+    ["kisiler","yukumlulukler","uyarilar"],
+    ["senaryolar","belgeler"],
+    ["guvenlik","kaynak"]
+  ];
+
+  function buildNav(){
+    const nav = $("#navlinks");
+    nav.innerHTML = NAV_GROUPS.map(g => g.map(v =>
+      `<button type="button" data-view="${v}"${v==="home"?' aria-current="true"':''}>${NAV_LABEL[v]}</button>`).join("")).join('<span class="navsep" aria-hidden="true"></span>');
+    nav.addEventListener("click", e => {
+      const b = e.target.closest("button[data-view]");
+      if (b) show(b.dataset.view);
+    });
+  }
+
+  function show(id){
+    if (!VIEWS.includes(id)) id = "home";
+    VIEWS.forEach(v => { $("#view-" + v).hidden = v !== id; });
+    $$("#navlinks button").forEach(b => b.setAttribute("aria-current", String(b.dataset.view === id)));
+    location.hash = id;
+    window.scrollTo({ top: 0 });
+    $("#main").focus();
+  }
+
+  /* ── ana sayfa ─────────────────────────────────────────────────── */
+  function buildHome(){
+    $("#home-grid").innerHTML = MODULES.map(m => `
+      <button class="card card-click" type="button" data-go="${m.id}">
+        <span class="tag">${m.tag}</span>
+        <h3 style="margin-top:12px;">${m.title}</h3>
+        <p>${m.desc}</p>
+      </button>`).join("");
+    $("#home-grid").addEventListener("click", e => {
+      const b = e.target.closest("[data-go]"); if (b) show(b.dataset.go);
+    });
+    $("#guide-map").innerHTML = GUIDE_MAP.map(r =>
+      `<tr><td class="n">${r[0]}</td><td>${r[1]}</td><td class="muted">${r[2]}</td></tr>`).join("");
+  }
+
+  const CONTROLLER = [
+    { n:"Mesleğini bağımsız icra eden avukat", d:"Kural olarak veri sorumlusudur: işlemenin amaç ve araçlarını belirler, veri kayıt sistemini kendi kurup yönetir. Müvekkil talimatı onu doğrudan veri işleyen yapmaz.", s:"Bölüm IV-A-1" },
+    { n:"Avukatın veri işleyen olduğu hâller", d:"Müvekkilin açık, ayrıntılı ve özel talimatlarının bulunduğu ve amaç ile araçlar üzerinde avukatın hiçbir kontrolünün olmadığı durumlar (Kurul 09.02.2021 · 2021/115).", s:"Bölüm IV-A-1" },
+    { n:"Aynı büroda birlikte çalışan avukatlar", d:"Tüzel kişilik yoktur; her avukat kendi müvekkili bakımından bağımsız veri sorumlusudur.", s:"Bölüm IV-A-2" },
+    { n:"Avukatlık ortaklığı", d:"Tüzel kişiliği olduğundan veri sorumlusu ortaklığın kendisidir.", s:"Bölüm IV-A-2" },
+    { n:"Tevkil olunan avukat", d:"Kural olarak veri işleyendir; tevkil sınırı aşılıp kendi vekâletini kurduğunda veri sorumlusu olur.", s:"Bölüm IV-A-3" },
+    { n:"Bağlı çalışan avukat", d:"İşveren avukatın organizasyonu içinde hareket eder; veri sorumlusu işveren avukattır.", s:"Bölüm IV-B-1" },
+    { n:"Stajyer avukat", d:"Aynı şekilde organizasyon içindedir; veri sorumlusu yanında staj yaptığı avukattır.", s:"Bölüm IV-B-2" },
+    { n:"Yardımcı personel (sekreter, kâtip)", d:"Organizasyon içi sayılır; faaliyet avukatın faaliyeti kapsamında değerlendirilir.", s:"Bölüm IV-B-3" }
+  ];
+
+  const DATACATS = [
+    "Kimlik ve iletişim verileri (ad, soyad, T.C. kimlik numarası, telefon, e-posta)",
+    "Adres bilgileri",
+    "Mali ve finansal veriler (borç, alacak, ödeme bilgileri)",
+    "Çalışma hayatına ilişkin veriler (işyeri, görev, çalışma koşulları)",
+    "Hukuki işlem verileri (dava ve icra dosyaları, dilekçeler, kararlar)",
+    "Sağlık verileri",
+    "Ceza mahkûmiyeti ve güvenlik tedbirlerine ilişkin veriler",
+    "Özel nitelikli veriler (aşağıdaki liste)"
+  ];
+
+  const SPECIAL = [
+    "Irk ve etnik köken","Siyasi düşünce","Felsefi inanç, din, mezhep ve diğer inançlar",
+    "Kılık ve kıyafet","Dernek, vakıf ya da sendika üyeliği","Sağlık ve cinsel hayat",
+    "Ceza mahkûmiyeti ve güvenlik tedbirleri","Biyometrik ve genetik veriler"
+  ];
+
+  /* ── yükümlülükler ─────────────────────────────────────────────── */
+  function buildObligations(){
+    $("#obl-grid").innerHTML = OBLIGATIONS.map((o,i) => `
+      <button class="card card-click" type="button" aria-expanded="false" data-obl="${i}">
+        <span class="idx">0${i+1}</span>
+        <h3 style="margin-top:8px;">${o.n}</h3>
+        <p>${o.dayanak}</p>
+      </button>`).join("");
+    $("#sure-body").innerHTML = SURELER.map(r =>
+      `<tr><td class="n">${r[0]}</td><td>${r[1]}</td><td class="muted">${r[2]}</td></tr>`).join("");
+
+    const grid = $("#obl-grid");
+    grid.addEventListener("click", e => {
+      const b = e.target.closest("[data-obl]"); if (!b) return;
+      const i = +b.dataset.obl, o = OBLIGATIONS[i];
+      const open = b.getAttribute("aria-expanded") === "true";
+      $$("[data-obl]", grid).forEach(x => {
+        x.setAttribute("aria-expanded","false");
+        const d = x.nextElementSibling; if (d && d.dataset.detail) d.remove();
+      });
+      if (!open){
+        b.setAttribute("aria-expanded","true");
+        const d = document.createElement("div");
+        d.dataset.detail = "1";
+        d.className = "card";
+        d.style.marginTop = "12px";
+        d.innerHTML = `<dl style="display:grid; grid-template-columns:max-content 1fr; gap:6px 16px; margin:0; font-size:14.5px;">
+            <dt class="muted">Ne yapılır</dt><dd>${o.what}</dd>
+            <dt class="muted">Ne zaman</dt><dd>${o.when}</dd>
+            <dt class="muted">Dikkat</dt><dd>${o.watch}</dd>
+            <dt class="muted">Dayanak</dt><dd class="meta">${o.dayanak}</dd>
+          </dl>`;
+        b.after(d);
+      }
+    });
+  }
+
+  /* ── ilgili kişi haritası ──────────────────────────────────────── */
+  function buildPeople(){
+    $("#controller-list").innerHTML = CONTROLLER.map((c,i) => `
+      <article class="card">
+        <span class="idx">0${i+1}</span>
+        <h3 style="margin-top:8px; font-size:17px;">${c.n}</h3>
+        <p style="margin-top:6px;">${c.d}</p>
+        <p class="meta" style="margin-top:12px;">${c.s}</p>
+      </article>`).join("");
+    $("#datacat-list").innerHTML = DATACATS.map(x => `<li>${x}</li>`).join("");
+    $("#special-list").innerHTML = SPECIAL.map(x => `<li>${x}</li>`).join("");
+    $("#people-grid").innerHTML = PEOPLE.map(p => `
+      <article class="card">
+        <h3>${p.n}</h3>
+        <dl style="margin-top:12px; display:grid; gap:10px; font-size:14.5px;">
+          <div><dt class="muted" style="font-size:12.5px;">Ne beklenir</dt><dd style="margin:2px 0 0;">${p.expect}</dd></div>
+          <div><dt class="muted" style="font-size:12.5px;">Tipik hata</dt><dd style="margin:2px 0 0; color:var(--muted);">${p.risk}</dd></div>
+          <div><dt class="muted" style="font-size:12.5px;">Dayanak</dt><dd class="meta" style="margin:2px 0 0;">${p.dayanak}</dd></div>
+        </dl>
+      </article>`).join("");
+    $("#common-grid").innerHTML = COMMON.map(c => `
+      <div class="card"><h3>${c.n}</h3><p style="margin-top:6px;">${c.d}</p></div>`).join("");
+  }
+
+  /* ── uyarılar ─────────────────────────────────────────────────── */
+  function buildWarnings(){
+    $("#warn-grid").innerHTML = WARNINGS.map((w,i) => `
+      <article class="card">
+        <span class="idx">0${i+1}</span>
+        <h3 style="margin-top:8px;">${w.n}</h3>
+        <p style="margin-top:8px;">${w.why}</p>
+        <p class="meta" style="margin-top:14px;">${w.d}</p>
+      </article>`).join("");
+  }
+
+  /* Senaryo belgelerini üreticiye bağlayan eşleme (üreticide şablonu olanlar) */
+  const DOC_LINKS = {
+    "Aydınlatma metni (müvekkil)": "aydinlatmaMusteri",
+    "Aydınlatma metni (tanığın verisi işleniyorsa)": "aydinlatmaMusteri",
+    "Çalışan aydınlatma metni": "aydinlatmaCalisan",
+    "Başvuru formu": "basvuruFormu",
+    "Cevap yazısı": "cevap",
+    "Veri ihlali bildirim formu": "ihlal",
+    "Veri işleme kayıt notu": "kayitNotu",
+    "Yapay zekâ araçları kullanım kuralı": "yzKural"
+  };
+
+  /* ── senaryolar ────────────────────────────────────────────────── */
+  function buildScenarios(){
+    $("#scn-list").innerHTML = SCENARIOS.map((s,i) => `
+      <button class="card card-click" type="button" style="margin-bottom:8px;" aria-pressed="false" data-scn="${i}">
+        <span class="idx">${String(i+1).padStart(2,"0")} · ${s.src}</span>
+        <h3 style="font-size:16.5px; margin-top:6px;">${s.n}</h3>
+      </button>`).join("");
+    $("#scn-list").addEventListener("click", e => {
+      const b = e.target.closest("[data-scn]"); if (b) renderScenario(+b.dataset.scn);
+    });
+    $("#scn-detail").addEventListener("click", e => {
+      const b = e.target.closest("[data-tpl]"); if (!b) return;
+      show("belgeler");
+      const sel = $("#doc-select"); sel.value = b.dataset.tpl;
+      renderDocFields();
+      $("#doc-preview").innerHTML = "";
+      $("#doc-print").disabled = true;
+      $("#doc-status").textContent = "";
+    });
+    renderScenario(0);
+  }
+
+  function renderScenario(i){
+    const s = SCENARIOS[i];
+    $$("[data-scn]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.scn === i)));
+    $("#scn-detail").innerHTML = `
+      <div class="card">
+        <span class="tag">${s.src}</span>
+        <h2 style="margin-top:14px; font-size:24px;">${s.n}</h2>
+        <h3 style="margin-top:24px;">Yapılacaklar</h3>
+        <ol class="bullets" style="margin-top:8px;">${s.steps.map(x => `<li>${x}</li>`).join("")}</ol>
+        <h3 style="margin-top:24px;">Hazırlanacak belgeler</h3>
+        <ul class="bullets" style="margin-top:8px;">${s.docs.map(x => DOC_LINKS[x]
+          ? `<li>${x} <button class="btn btn-secondary btn-sm" type="button" data-tpl="${DOC_LINKS[x]}">Üreticide aç</button></li>`
+          : `<li>${x} <span class="tag">üreticide yok</span></li>`).join("")}</ul>
+        <p class="meta" style="margin-top:24px;">Dayanak: ${s.dayanak}</p>
+      </div>`;
+  }
+
+  /* ── karar akışı ───────────────────────────────────────────────── */
+  let stepIndex = 0;
+  const answers = {};
+
+  function renderWizard(){
+    const panel = $("#wizard-panel");
+    $("#wizard-result").innerHTML = "";
+    const pips = WIZ.map((w,i) => {
+      const st = i < stepIndex ? "done" : (i === stepIndex ? "active" : "todo");
+      return `<span class="step-pip" data-state="${st}">${i+1}. ${w.q.replace(/\?$/,"")}</span>`;
+    }).join("");
+
+    if (stepIndex >= WIZ.length){
+      panel.innerHTML = `<div class="steps">${pips}</div>
+        <div class="card"><h3>Yanıtlarınız</h3><ul class="bullets" style="margin-top:10px;">
+          ${WIZ.map(w => `<li>${w.q} <b>${esc(labelOf(w, answers[w.id]))}</b></li>`).join("")}
+        </ul>
+        <div class="wiz-actions no-print">
+          <button class="btn btn-primary" id="wiz-eval">Sonucu göster</button>
+          <button class="btn btn-secondary" id="wiz-reset">Baştan başla</button>
+        </div></div>`;
+      $("#wiz-eval").addEventListener("click", evaluate);
+      $("#wiz-reset").addEventListener("click", () => { stepIndex = 0; WIZ.forEach(w => delete answers[w.id]); renderWizard(); });
+      return;
+    }
+
+    const w = WIZ[stepIndex];
+    panel.innerHTML = `<div class="steps">${pips}</div>
+      <form id="wiz-form" class="card">
+        <fieldset>
+          <legend><h3>${w.q}</h3></legend>
+          <div class="opts">
+            ${w.opts.map(o => `<label class="opt"><input type="radio" name="${w.id}" value="${o[0]}"${answers[w.id]===o[0]?" checked":""}><span>${o[1]}</span></label>`).join("")}
+          </div>
+        </fieldset>
+        <p class="meta" id="wiz-err" role="alert" style="margin-top:14px;"></p>
+        <div class="wiz-actions">
+          <button class="btn btn-primary" type="submit">${stepIndex === WIZ.length-1 ? "Bitir" : "Devam"}</button>
+          ${stepIndex > 0 ? '<button class="btn btn-secondary" type="button" id="wiz-back">Geri</button>' : ""}
+          <button class="btn btn-secondary" type="button" id="wiz-cancel">Sıfırla</button>
+        </div>
+      </form>`;
+
+    $("#wiz-form").addEventListener("submit", e => {
+      e.preventDefault();
+      const v = $("#wiz-form input:checked");
+      if (!v){ $("#wiz-err").textContent = "Devam etmek için bir seçenek işaretleyin."; $("#wiz-form input").focus(); return; }
+      answers[w.id] = v.value;
+      stepIndex++;
+      renderWizard();
+    });
+    const back = $("#wiz-back");
+    if (back) back.addEventListener("click", () => { stepIndex--; renderWizard(); });
+    $("#wiz-cancel").addEventListener("click", () => { stepIndex = 0; WIZ.forEach(x => delete answers[x.id]); renderWizard(); });
+  }
+
+  function labelOf(w, v){ const o = w.opts.find(o => o[0] === v); return o ? o[1] : "—"; }
+
+  function evaluate(){
+    const a = answers, warn = [];
+    const kisiLabel = labelOf(WIZ[0], a.kisi);
+
+    const genel = [];
+    if (a.kisi === "musteri"){
+      if (a.amac === "takip") genel.push(["Hakkın tesisi, kullanılması veya korunması","KVKK m.5/2-e"]);
+      else if (a.amac === "uyum") genel.push(["Hukuki yükümlülüğün yerine getirilmesi","KVKK m.5/2-ç"]);
+      else genel.push(["Sözleşmenin kurulması veya ifası","KVKK m.5/2-c"]);
+    } else if (a.kisi === "calisan"){
+      genel.push(["Hukuki yükümlülüğün yerine getirilmesi (istihdam ve iş sağlığı-güvenliği)","KVKK m.5/2-ç"]);
+    } else if (a.kisi === "meslektas"){
+      genel.push(["Tevkil sözleşmesinin kurulması ve ifası","KVKK m.5/2-c"]);
+      genel.push(["Hukuki yükümlülüğün yerine getirilmesi (mesleki kayıt ve serbest meslek makbuzu)","KVKK m.5/2-ç"]);
+    } else {
+      genel.push(["Hakkın tesisi, kullanılması veya korunması","KVKK m.5/2-e"]);
+    }
+    if (a.kaynak === "kamuyaacik"){
+      genel.push(["Alenileştirme","KVKK m.5/2-d"]);
+      warn.push("Verinin görünür olması tek başına yetmez; kişinin onu alenileştirme iradesi bulunmalıdır.");
+    }
+    if (a.kaynak === "dosya"){
+      genel.push(["Kanunlarda açıkça öngörülme","KVKK m.5/2-a"]);
+      warn.push("Dayanağı somut hükme bağlayın (örneğin İİK m.89 veya HMK m.221) ve yalnızca yetkili kanalları kullanın.");
+    }
+    if (a.kaynak === "dosya" || a.kaynak === "kamuyaacik"){
+      warn.push("Veri sorgulamaya imkân tanıyan yazılım ve uygulamalara başvurmayın (Kurul 18.10.2019, 2019/308 ilke kararı).");
+    }
+    if (a.ozelhal === "fiili"){
+      genel.push(["Fiili imkânsızlık nedeniyle rızasını açıklayamayacak durumda olan veya rızasına hukuki geçerlilik tanınmayan kişinin kendisinin ya da bir başkasının hayatı veya beden bütünlüğünün korunması için zorunlu olma","KVKK m.5/2-b"]);
+      warn.push("Fiili imkânsızlık hâlinde veri yalnızca koruma amacıyla gerekli olduğu ölçüde işlenir; kapsam olayla sınırlı tutulmalıdır.");
+    }
+    if (a.ozelhal === "mesru"){
+      if (a.ozel === "var"){
+        warn.push("Özel nitelikli kişisel veriler için meşru menfaat dayanağı yoktur; yalnızca 6. maddedeki şartlara dayanılabilir.");
+      } else if (a.kisi === "karsi"){
+        warn.push("Karşı taraf ve borçlu verilerinde meşru menfaat dayanağı risklidir; veriler takip, dava veya arabuluculuk kapsamında hakkın tesisi (m.5/2-e) ya da özel kanun hükümleriyle sınırlı tutulmalıdır.");
+      } else {
+        genel.push(["Meşru menfaat","KVKK m.5/2-f"]);
+        warn.push("Meşru menfaat, ilgili kişinin temel hak ve özgürlüklerine zarar vermemek kaydıyla ve yalnızca işlemenin zorunlu olduğu ölçüde uygulanır.");
+      }
+    }
+    if (a.kisi !== "musteri" && a.kisi !== "calisan"){
+      warn.push("Veriyi yalnızca gerekli ölçüde işleyin; ilgisiz üçüncü kişilere hiçbir bilgi sızdırmayın.");
+    }
+    if (a.kisi === "tanik" || a.kisi === "ucuncu"){
+      warn.push("Veriyi nereden elde ettiğinizi belgeleyebilir durumda olun; başvuruda kaynağın tevsiki istenir.");
+    }
+    if (a.kisi === "calisan"){
+      warn.push("Çalışanın kendi verisi de ilgili kişi verisidir: aydınlatma, veri güvenliği ve erişim sınırlaması yükümlülükleri işler.");
+      warn.push("Özlük ve sosyal güvenlik kayıtları için mevzuattan doğan saklama süreleri ayrıca değerlendirilir.");
+    }
+    if (a.kisi === "meslektas"){
+      warn.push("Tevkil olunan avukat kural olarak veri işleyendir; aktarımı gerekenle sınırlı tutun ve tevkil sınırını aşmayın. Meslektaşın kendi verileri için sözleşme ve hukuki yükümlülük dayanakları geçerlidir; müvekkile ait paylaşılan veriler bakımından hakkın tesisi değerlendirilir.");
+    }
+
+    let bases = genel;
+    let ozel = "";
+    if (a.ozel === "var"){
+      const o = [];
+      if (a.kisi === "calisan") o.push(["İstihdam, iş sağlığı ve güvenliği ile sosyal güvenlik alanındaki hukuki yükümlülükler","KVKK m.6/3"]);
+      else if (a.kaynak === "dosya") o.push(["Kanunlarda açıkça öngörülmesi","KVKK m.6/3"]);
+      else if (a.kaynak === "kamuyaacik") o.push(["İlgili kişinin alenileştirdiği verilere ilişkin olması ve alenileştirme iradesine uygunluğu","KVKK m.6/3"]);
+      else if (a.ozelhal === "fiili") o.push(["Fiili imkânsızlık nedeniyle rızasını açıklayamayacak durumda bulunan kişinin hayatı veya beden bütünlüğünün korunması için zorunlu olması","KVKK m.6/3"]);
+      else if (a.kisi === "karsi" || a.kisi === "tanik" || a.kisi === "ucuncu" || a.amac === "takip") o.push(["Bir hakkın tesisi, kullanılması veya korunması için zorunlu olması","KVKK m.6/3"]);
+      else if (a.kisi === "musteri" && a.amac === "danisma"){
+        o.push(["Bir hakkın tesisi, kullanılması veya korunması için zorunlu olması — danışmanlık bir hakkın tespitine veya savunma hazırlığına yönelikse","KVKK m.6/3"]);
+        o.push(["İlgili kişinin açık rızasının bulunması — salt genel bilgilendirme ve hukuki takiple bağlantısızsa","KVKK m.6/3"]);
+        warn.push("Danışmanlıkta özel nitelikli veri için önce hakkın tesisi şartı değerlendirilmelidir; açık rıza, başka dayanak kalmadığında alınır.");
+      }
+      else o.push(["İlgili kişinin açık rızasının bulunması","KVKK m.6/3"]);
+      bases = o;
+      ozel = "Özel nitelikli kişisel veriler, Kanunun 5. maddesindeki genel şartlara dayanılarak işlenemez; yalnızca 6. maddedeki şartlara dayanılabilir. İşleme sırasında Kurulun 31.01.2018 tarihli ve 2018/10 sayılı kararındaki yeterli önlemler alınmalıdır. Şartlar 6. maddenin üçüncü fıkrasında, yeterli önlemler dördüncü fıkrasında düzenlenmiştir.";
+    }
+
+    const ornek =
+      a.kisi === "karsi" && a.amac === "takip" ? "Kurul 09.09.2021 · 2021/909 — icra takibinde verilerin paylaşımı" :
+      a.kisi === "tanik" ? "Kurul 16.09.2021 · 2021/925 — dava dilekçesinde tanığa ilişkin veriler" :
+      a.kisi === "meslektas" ? "Kurul 09.02.2021 · 2021/115 — avukatın veri işleyen olabileceği hâller" :
+      a.kisi === "musteri" && a.amac === "danisma" ? "Kurul 19.01.2023 · 2023/78 — doğru ve gerektiğinde güncel olma" :
+      "Kurul 21.10.2021 · 2021/1069 — hakkın korunması için veri işleme";
+
+    $("#wizard-result").innerHTML = `
+      <hr class="rule" />
+      <div class="doc" id="wiz-output">
+        <span class="tag">Sonuç</span>
+        <h2 style="margin-top:14px;">${kisiLabel} · ${labelOf(WIZ[3], a.amac)}</h2>
+        <p class="muted" style="margin-top:10px;">Bu veri için başvurabileceğiniz dayanaklar:</p>
+        <ul class="plain" style="margin-top:10px;">
+          ${bases.map(b => `<li><b>${b[0]}</b> <span class="meta">${b[1]}</span></li>`).join("")}
+        </ul>
+        ${ozel ? `<p style="margin-top:16px;">${ozel}</p>` : ""}
+        <h3 style="margin-top:24px;">Dikkat edilecekler</h3>
+        <ul class="bullets">
+          ${bases.some(b => b[0].indexOf("açık rıza") !== -1)
+            ? "<li>Bu durumda açık rıza tek dayanak olduğu için gereklidir. Bilgilendirmeyi rızadan önce yapın ve rızanın her an geri çekilebileceğini açıkça belirtin.</li>"
+            : `<li>${NAC} Veri sorumlusu, işlemeyi mümkün kılan başka bir hukuki sebep varsa açık rızaya dayanmamalıdır.</li>`}
+          ${warn.map(x => `<li>${x}</li>`).join("")}
+          <li>Aydınlatma yükümlülüğü ayrıca işler (KVKK m.10): kural olarak veri elde edilirken, dolaylı elde etmede makul süre içinde.</li>
+        </ul>
+        <p class="dayanak">Benzer bir olay için: ${ornek}</p>
+        <div class="notice">${DOC_NOTICE}</div>
+        <div class="wiz-actions no-print">
+          <button class="btn btn-secondary" id="wiz-print">Yazdır / PDF</button>
+        </div>
+      </div>`;
+    $("#wiz-print").addEventListener("click", () => window.print());
+    const el = $("#wizard-result");
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 76, behavior: "smooth" });
+  }
+
+  /* ── belge üretici ─────────────────────────────────────────────── */
+  function buildDocs(){
+    const sel = $("#doc-select");
+    sel.innerHTML = DOC_TYPES.map(d => `<option value="${d.id}">${d.title}</option>`).join("");
+    sel.addEventListener("change", () => { renderDocFields(); $("#doc-preview").innerHTML = ""; $("#doc-print").disabled = true; $("#doc-status").textContent = ""; });
+    $("#doc-build").addEventListener("click", buildDoc);
+    $("#doc-print").addEventListener("click", () => window.print());
+    renderDocFields();
+    $("#doc-preview").innerHTML = `<div class="note"><p><b>Önizleme burada görünecek.</b> Soldaki alanları doldurup “Belgeyi oluştur”a bastığınızda belge, zorunlu bildirim notu ve dayanak satırıyla birlikte bu alanda oluşur.</p></div>`;
+  }
+
+  function renderDocFields(){
+    const t = DOC_TYPES.find(d => d.id === $("#doc-select").value);
+    $("#doc-fields").innerHTML = `<div class="stack">
+      <p class="meta">${t.purpose}</p>
+      ${t.fields.map(f => {
+        const id = "f-" + f.id;
+        if (f.type === "textarea"){
+          return `<div class="field"><label for="${id}">${f.label}</label><textarea class="textarea" id="${id}" placeholder="${f.ph}"></textarea></div>`;
+        }
+        if (f.type === "select"){
+          return `<div class="field"><label for="${id}">${f.label}</label><select class="input" id="${id}">${f.options.map(o => `<option>${esc(o)}</option>`).join("")}</select></div>`;
+        }
+        return `<div class="field"><label for="${id}">${f.label}</label><input class="input" id="${id}" placeholder="${f.ph}" /></div>`;
+      }).join("")}
+    </div>`;
+  }
+
+  function buildDoc(){
+    const t = DOC_TYPES.find(d => d.id === $("#doc-select").value);
+    const vals = {}; let missing = 0;
+    t.fields.forEach(f => {
+      const el = $("#f-" + f.id);
+      vals[f.id] = el.value.trim();
+      el.style.borderColor = "";
+      if (!vals[f.id]){ el.style.borderColor = "var(--accent)"; missing++; }
+    });
+    const status = $("#doc-status");
+    if (missing){
+      status.textContent = missing + " alan boş. Taslakta boş alanlar köşeli parantezle gösterilir.";
+    } else {
+      status.textContent = "Belge oluşturuldu.";
+    }
+    const g = (f) => vals[f] ? esc(vals[f]).replace(/\n/g, "<br>") : "<span class=\"muted\">[" + (t.fields.find(x => x.id === f)?.label || "…") + "]</span>";
+
+    let body = "";
+    if (t.id === "aydinlatmaMusteri"){
+      body = `<p>İşbu aydınlatma metni, 6698 sayılı Kişisel Verilerin Korunması Kanununun 10. maddesi uyarınca hazırlanmıştır.</p>
+        <dl>
+          <dt>Veri sorumlusu</dt><dd>${g("sorumlu")}</dd>
+          <dt>İletişim</dt><dd>${g("iletisim")}</dd>
+          <dt>İşleme amacı</dt><dd>${g("amac")}</dd>
+          <dt>Aktarılabilecek taraflar</dt><dd>${g("aktarim")}</dd>
+          <dt>Toplama yöntemi ve hukuki sebep</dt><dd>${g("yontem")}</dd>
+        </dl>
+        <p style="margin-top:16px;">Kanunun 11. maddesi kapsamında; kişisel verilerinizin işlenip işlenmediğini öğrenme, işlenmişse buna ilişkin bilgi talep etme, işlenme amacını öğrenme, eksik veya yanlış işlenmişse düzeltilmesini isteme, silinmesini veya yok edilmesini isteme, aktarıldığı üçüncü kişileri bilme ve zararın giderilmesini talep etme haklarına sahipsiniz. Başvurularınızı yukarıdaki iletişim kanalına iletebilirsiniz.</p>`;
+    } else if (t.id === "aydinlatmaCalisan"){
+      body = `<p>İşbu aydınlatma metni, 6698 sayılı Kanunun 10. maddesi uyarınca, büroda çalışan personelin özlük verilerinin işlenmesine ilişkin olarak hazırlanmıştır.</p>
+        <dl>
+          <dt>Veri sorumlusu</dt><dd>${g("sorumlu")}</dd>
+          <dt>İletişim</dt><dd>${g("iletisim")}</dd>
+          <dt>İşleme amacı</dt><dd>${g("amac")}</dd>
+          <dt>Aktarılabilecek taraflar</dt><dd>${g("aktarim")}</dd>
+          <dt>Saklama süresi</dt><dd>${g("saklama")}</dd>
+        </dl>
+        <p style="margin-top:16px;">Özlük dosyanızda yer alan veriler bakımından Kanunun 11. maddesindeki haklarınızı kullanabilirsiniz. İş sağlığı ve güvenliği ile sosyal güvenlik alanındaki yükümlülükler gereği işlenen veriler, ilgili mevzuatta öngörülen süreler boyunca saklanır.</p>`;
+    } else if (t.id === "aydinlatmaWeb"){
+      body = `<p>İşbu aydınlatma metni, 6698 sayılı Kanunun 10. maddesi uyarınca, internet sitesi ve iletişim kanallarını kullanan ilgili kişiler bakımından hazırlanmıştır.</p>
+        <dl>
+          <dt>Veri sorumlusu</dt><dd>${g("sorumlu")}</dd>
+          <dt>İletişim</dt><dd>${g("iletisim")}</dd>
+          <dt>İşleme amacı</dt><dd>${g("amac")}</dd>
+          <dt>Aktarılabilecek taraflar</dt><dd>${g("aktarim")}</dd>
+        </dl>
+        <p style="margin-top:16px;">Siteyi yalnızca ziyaret etmeniz hâlinde veri işlenmez; iletişim kanallarımıza ilettiğiniz bilgiler yukarıdaki amaçlarla sınırlı olarak işlenir. Kanunun 11. maddesindeki haklarınızı yukarıdaki iletişim kanalına başvurarak kullanabilirsiniz.</p>`;
+    } else if (t.id === "cevap"){
+      body = `<p>Sayın ${g("muhatap")},</p>
+        <p style="margin-top:12px;">${g("tarih")} tarihli, ${g("talep")} konulu başvurunuz incelenmiştir.</p>
+        <dl>
+          <dt>Talep konusu</dt><dd>${g("talep")}</dd>
+          <dt>Sonuç</dt><dd>${g("karar")}</dd>
+          <dt>Gerekçe</dt><dd>${g("gerekce")}</dd>
+          <dt>Verinin kaynağı</dt><dd>${g("kaynak")}</dd>
+        </dl>
+        <p style="margin-top:16px;">Talep, 6698 sayılı Kanunun 13. maddesi uyarınca sonuçlandırılmıştır. Talebinizin reddedildiği hâllerde; ret gerekçesi, dayanağı ve verilerin hangi süreyle muhafaza edileceği yukarıda belirtilmiştir. Veri sorumlusunun cevabını yetersiz bulmanız veya süresi içinde cevap verilmemesi hâlinde Kişisel Verileri Koruma Kuruluna şikâyette bulunabilirsiniz.</p>`;
+    } else if (t.id === "ihlal"){
+      body = `<p><b>Konu:</b> Kişisel veri ihlali bildirimi.</p>
+        <dl>
+          <dt>Veri sorumlusu</dt><dd>${g("sorumlu")}</dd>
+          <dt>İhlalin niteliği</dt><dd>${g("olay")}</dd>
+          <dt>İhlal / öğrenme tarihi</dt><dd>${g("tarih")}</dd>
+          <dt>Etkilenen kişi ve veriler</dt><dd>${g("etkilenen")}</dd>
+          <dt>Özel nitelikli veri</dt><dd>${g("ozel")}</dd>
+          <dt>Alınan önlemler</dt><dd>${g("onlem")}</dd>
+        </dl>
+        <p style="margin-top:16px;">6698 sayılı Kanunun 12. maddesinin beşinci fıkrası uyarınca ihlal, öğrenilmesinden itibaren en kısa sürede ve en geç 72 saat içinde Kişisel Verileri Koruma Kuruluna bildirilir; etkilenen kişilere de ulaşılabiliyorsa doğrudan, ulaşılamıyorsa uygun yöntemlerle bildirim yapılır.</p>`;
+    } else if (t.id === "basvuruFormu"){
+      body = `<p>6698 sayılı Kişisel Verilerin Korunması Kanununun 11. maddesi kapsamındaki talebinizi aşağıdaki bilgilerle iletebilirsiniz.</p>
+        <dl>
+          <dt>Başvuran</dt><dd>${g("adsoyad")}</dd>
+          <dt>İletişim</dt><dd>${g("iletisim")}</dd>
+          <dt>Talep konusu</dt><dd>${g("talep")}</dd>
+          <dt>Talebin ayrıntısı</dt><dd>${g("ayrinti")}</dd>
+          <dt>Tarih</dt><dd>${g("tarih")}</dd>
+        </dl>
+        <p style="margin-top:16px;">Başvuru, talebin niteliğine göre en kısa sürede ve en geç 30 gün içinde ücretsiz olarak sonuçlandırılır.</p>`;
+    } else if (t.id === "kayitNotu"){
+      body = `<p>Aşağıdaki kayıt, işlenen verilerin izlenebilirliğini sağlamak amacıyla tutulur.</p>
+        <dl>
+          <dt>Dosya / iş</dt><dd>${g("dosya")}</dd>
+          <dt>Veri kategorileri</dt><dd>${g("veriler")}</dd>
+          <dt>Verinin kaynağı</dt><dd>${g("kaynak")}</dd>
+          <dt>İşleme amacı</dt><dd>${g("amac")}</dd>
+          <dt>Hukuki dayanak</dt><dd>${g("dayanak")}</dd>
+          <dt>Saklama süresi</dt><dd>${g("sure")}</dd>
+        </dl>
+        <p style="margin-top:16px;">İlgili kişi başvurduğunda verinin hangi kaynaktan elde edildiğinin açıklanabilmesi bu kayda dayanır.</p>`;
+    } else if (t.id === "yzKural"){
+      body = `<p><b>${g("buro")}</b> bünyesinde üretken yapay zekâ araçlarının kullanımına ilişkin kurallar.</p>
+        <dl>
+          <dt>İzin verilen araçlar</dt><dd>${g("araclar")}</dd>
+          <dt>Yüklenmesi yasak veriler</dt><dd>${g("yasak")}</dd>
+          <dt>Maskeleme kuralı</dt><dd>${g("maske")}</dd>
+          <dt>Kayıt ve denetim</dt><dd>${g("kayit")}</dd>
+          <dt>Sorumlu</dt><dd>${g("sorumlu")}</dd>
+        </dl>
+        <ul class="bullets" style="margin-top:16px;">
+          <li>Araç yurt dışı mukim ise veya sunucuları yurt dışında ise, belge yüklenmesi yurt dışına aktarım doğurabilir.</li>
+          <li>Özel nitelikli kişisel veriler bu araçlara hiç yüklenmez.</li>
+          <li>Yükleme öncesinde maskeleme veya anonimleştirme uygulanır; yalnızca amaca yeten asgari veri paylaşılır.</li>
+        </ul>`;
+    } else {
+      body = `<dl>${t.fields.filter(f => vals[f.id]).map(f => `<dt>${f.label}</dt><dd>${g(f.id)}</dd>`).join("")}</dl>`;
+    }
+
+    $("#doc-preview").innerHTML = `
+      <div class="doc">
+        <span class="tag">${DOC_SRC[t.id] || ""}</span>
+        <h3 style="margin-top:12px;">${t.title}</h3>
+        <div style="margin-top:18px; font-size:15px;">${body}</div>
+        <p class="dayanak">Dayanak: ${t.dayanak}</p>
+        <div class="notice">${DOC_NOTICE}</div>
+      </div>`;
+    $("#doc-print").disabled = false;
+  }
+
+  /* ── açık rıza ve ilkeler ─────────────────────────────────────── */
+  function buildConsent(){
+    $("#consent-elements").innerHTML = CONSENT_ELEMENTS.map(c =>
+      `<div class="card"><h3>${c.n}</h3><p style="margin-top:6px;">${c.d}</p></div>`).join("");
+    $("#consent-need").innerHTML = CONSENT_NEED.map(x => `<li>${x}</li>`).join("");
+    $("#consent-not").innerHTML = CONSENT_NOT.map(x => `<li>${x}</li>`).join("");
+    $("#consent-errors").innerHTML = CONSENT_ERRORS.map((e,i) =>
+      `<article class="card"><span class="idx">0${i+1}</span><h3 style="margin-top:8px; font-size:17px;">${e.n}</h3><p style="margin-top:6px;">${e.d}</p></article>`).join("");
+    $("#principles").innerHTML = PRINCIPLES.map(p =>
+      `<article class="card"><h3 style="font-size:17px;">${p.n}</h3><p style="margin-top:6px;">${p.d}</p></article>`).join("");
+  }
+
+  /* ── aktarım ──────────────────────────────────────────────────── */
+  function buildTransfer(){
+    $("#transfer-body").innerHTML = TRANSFER.map(t => `
+      <article class="card">
+        <span class="tag">${t.tag}</span>
+        <h2 style="margin-top:14px; font-size:24px;">${t.title}</h2>
+        <ul class="bullets" style="margin-top:12px;">${t.body.map(b => `<li>${b}</li>`).join("")}</ul>
+        <p class="meta" style="margin-top:16px;">Dayanak: ${t.dayanak}</p>
+      </article>`).join("");
+  }
+
+  /* ── güvenlik kontrol listesi ─────────────────────────────────── */
+  function buildSecurity(){
+    $("#sec-body").innerHTML = SECURITY.map((g,gi) => `
+      <article class="card">
+        <span class="tag">${String(gi+1).padStart(2,"0")}</span>
+        <h3 style="margin-top:10px;">${g.group}</h3>
+        <div style="margin-top:10px;">
+          ${g.items.map(it => `<label class="check"><input type="checkbox"><span>${it}</span></label>`).join("")}
+        </div>
+      </article>`).join("");
+    const KEY = "kvkk-guvenlik-isaretleri";
+    const boxes = () => $$("#sec-body input[type=checkbox]");
+    const update = () => {
+      const list = boxes();
+      const done = list.filter(b => b.checked).length;
+      $("#sec-count").textContent = done + " / " + list.length + " madde işaretlendi." + (done === list.length ? " Tümü tamam." : "");
+      try { localStorage.setItem(KEY, JSON.stringify(list.map(b => b.checked))); } catch (e) { /* tarayıcı izin vermiyorsa sessizce geç */ }
+    };
+    try {
+      const saved = JSON.parse(localStorage.getItem(KEY) || "[]");
+      boxes().forEach((b, i) => { if (saved[i]) b.checked = true; });
+    } catch (e) { /* kayıt yoksa boş başla */ }
+    $("#sec-body").addEventListener("change", e => { if (e.target.type === "checkbox") update(); });
+    $("#sec-reset").addEventListener("click", () => { boxes().forEach(b => { b.checked = false; }); update(); });
+    update();
+  }
+
+  /* ── arama ────────────────────────────────────────────────────── */
+  const fold = s => String(s).toLocaleLowerCase("tr")
+    .replace(/ı/g,"i").replace(/ş/g,"s").replace(/ğ/g,"g")
+    .replace(/ü/g,"u").replace(/ö/g,"o").replace(/ç/g,"c");
+
+  /* Arama için olay diliyle takma adlar (avukat terimi değil, olay yazar) */
+  const SEARCH_ALIASES = [
+    { q:"borçlu yakını sms mesaj komşu iş arkadaşı kardeş kısa mesaj", view:"uyarilar", title:"İlgisiz kişilere borç bilgisi iletmek" },
+    { q:"kafeterya kafe restoran açık alan", view:"uyarilar", title:"Dosyayı herkese açık ortamda bırakmak" },
+    { q:"haciz ihbarnamesi icra müdürlüğü ihbarname", view:"senaryolar", title:"Karşı taraf veya borçlu — ihtar, icra takibi" },
+    { q:"icra takibi haciz ihtarname takip borçlu", view:"yukumlulukler", title:"İkinci taraf verileri ve takip" },
+    { q:"dosya kapağı kafeterya açıkta bırakma çanta araç", view:"uyarilar", title:"Dosyayı herkese açık ortamda bırakmak" },
+    { q:"72 saat ihlal bildirimi sızıntı veri kaybı", view:"yukumlulukler", title:"Veri ihlalinin bildirilmesi" },
+    { q:"bilirkişi raporu tanık beyanı tanık görüşme", view:"senaryolar", title:"Tanıkla görüşüldü" },
+    { q:"standart sözleşme taahhütname yeterlilik kararı yurt dışı", view:"aktarim", title:"Yurt dışına aktarım " },
+    { q:"özel nitelikli veri sağlık engelli raporu sendika inanç biyometrik", view:"kisiler", title:"Özel nitelikli kişisel veriler" },
+    { q:"makbuz serbest meslek mali yükümlülük vergi", view:"karar", title:"Hukuki yükümlülük dayanağı" },
+    { q:"tevkil meslektaş ortak ofis birlikte", view:"kisiler", title:"Sorumluluk kimde?" },
+    { q:"UYAP sorgu araç sorgusu mal alacak icra dosyası", view:"senaryolar", title:"Kurumdan veya UYAP üzerinden bilgi isteniyor" },
+    { q:"açık rıza formu imzalatmak yanıltıcı geri alma", view:"acikriza", title:"Tipik hatalar" },
+    { q:"stajyer bağlı avukat sekreter yardımcı personel", view:"kisiler", title:"Sorumluluk kimde?" },
+    { q:"hasta kaydı epikriz vekaletname özel yetki sağlık verisi", view:"senaryolar", title:"Tanıkla görüşüldü" },
+    { q:"adli sicil kaydı resen erişim", view:"uyarilar", title:"Adli sicil kaydına resen erişmeye çalışmak" },
+    { q:"yapay zekâ chatbot dosya yükleme maskeleme", view:"guvenlik", title:"Rehberin yasakladığı ve önerdiği" }
+  ];
+
+  function searchIndex(){
+    const ix = [];
+    MODULES.forEach(m => ix.push({ view:m.id, title:m.title, text:m.desc }));
+    OBLIGATIONS.forEach(o => ix.push({ view:"yukumlulukler", title:o.n, text:o.what+" "+o.when+" "+o.watch+" "+o.dayanak }));
+    PEOPLE.forEach(p => ix.push({ view:"kisiler", title:p.n, text:p.expect+" "+p.risk+" "+p.dayanak }));
+    WARNINGS.forEach(w => ix.push({ view:"uyarilar", title:w.n, text:w.why+" "+w.d }));
+    SCENARIOS.forEach((s,i) => ix.push({ view:"senaryolar", title:s.n, text:s.steps.join(" ")+" "+s.docs.join(" ")+" "+s.dayanak, act:() => renderScenario(i) }));
+    DOC_TYPES.forEach(d => ix.push({ view:"belgeler", title:d.title, text:d.purpose+" "+d.dayanak, act:() => { const sel = $("#doc-select"); sel.value = d.id; renderDocFields(); $("#doc-preview").innerHTML = ""; $("#doc-print").disabled = true; $("#doc-status").textContent = ""; } }));
+    CONSENT_ELEMENTS.forEach(c => ix.push({ view:"acikriza", title:c.n, text:c.d }));
+    CONSENT_ERRORS.forEach(c => ix.push({ view:"acikriza", title:c.n, text:c.d }));
+    PRINCIPLES.forEach(p => ix.push({ view:"acikriza", title:p.n, text:p.d }));
+    TRANSFER.forEach(t => ix.push({ view:"aktarim", title:t.title, text:t.body.join(" ")+" "+t.dayanak }));
+    SECURITY.forEach(g => g.items.forEach(it => ix.push({ view:"guvenlik", title:it, text:g.group })));
+    SEARCH_ALIASES.forEach(a => ix.push({ view:a.view, title:a.title, text:a.q }));
+    return ix;
+  }
+
+  let IX = [];
+
+  function renderSearch(raw){
+    const box = $("#search-results");
+    const q = fold(String(raw).trim());
+    if (q.length < 2){ box.innerHTML = `<p class="muted">Aramak için en az iki harf yazın.</p>`; return; }
+    const words = q.split(/\s+/).filter(w => w.length >= 2);
+    if (!words.length){ box.innerHTML = `<p class="muted">Eşleşen sonuç yok.</p>`; return; }
+    const hits = IX.filter(e => { const hay = fold(e.title + " " + e.text); return words.every(w => hay.includes(w)); }).slice(0, 24);
+    if (!hits.length){
+      box.innerHTML = `<div class="note"><p><b>Sonuç bulunamadı.</b> Şunları deneyebilirsiniz: açık rıza, ihlal, tanık, saklama, aktarım, yapay zekâ.</p></div>`;
+      return;
+    }
+    box.innerHTML = hits.map((e,i) => {
+      const t = e.text.length > 190 ? e.text.slice(0,190) + "…" : e.text;
+      return `<button class="card card-click result" type="button" data-res="${i}">
+        <span class="tag">${NAV_LABEL[e.view] || e.view}</span>
+        <h3 style="font-size:17px; margin-top:10px;">${esc(e.title)}</h3>
+        <div class="snip">${esc(t)}</div>
+      </button>`;
+    }).join("");
+    box.onclick = ev => {
+      const b = ev.target.closest("[data-res]");
+      if (!b) return;
+      const e = hits[+b.dataset.res];
+      show(e.view);
+      if (e.act) e.act();
+    };
+  }
+
+  function initSearch(){
+    IX = searchIndex();
+    const input = $("#q");
+    input.addEventListener("input", () => {
+      const v = input.value.trim();
+      if (v.length >= 2 && location.hash.slice(1) !== "arama") show("arama");
+      renderSearch(input.value);
+    });
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter"){ e.preventDefault(); show("arama"); renderSearch(input.value); }
+    });
+    renderSearch("");
+  }
+
+  /* ── kaynaklar ─────────────────────────────────────────────────── */
+  function buildDecisions(){
+    $("#decisions-body").innerHTML = DECISIONS.map(d =>
+      `<tr><td class="n">${d[0]}</td><td>${d[1]}</td></tr>`).join("");
+  }
+
+  /* ── başlat ────────────────────────────────────────────────────── */
+  buildNav(); buildHome(); buildObligations(); buildWarnings(); buildPeople();
+  buildScenarios(); renderWizard(); buildDocs(); buildConsent(); buildTransfer(); buildSecurity(); buildDecisions(); initSearch();
+  window.addEventListener("hashchange", () => show(location.hash.slice(1) || "home"));
+  show(location.hash.slice(1) || "home");
+  </script>
+</body>
+</html>
